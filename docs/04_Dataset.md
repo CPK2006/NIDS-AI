@@ -132,3 +132,54 @@ The preprocessing pipeline will include, where required:
 - Class distribution analysis
 
 Raw data will remain unchanged throughout the project.
+
+---
+
+## Data Quality Assessment
+
+An initial quality inspection was performed on all eight raw CICIDS2017 CSV files.
+
+### Missing Values
+
+Missing values were found only in the `Flow Bytes/s` feature.
+
+The missing values will be handled during preprocessing rather than modifying the raw dataset.
+
+### Infinite Values
+
+Infinite values were found in:
+
+- `Flow Bytes/s`
+- `Flow Packets/s`
+
+These values are caused by network-flow rate calculations and will be converted to missing values during preprocessing.
+
+### Duplicate Records
+
+Exact duplicate records were found in several files. Some files contain a substantial number of duplicates.
+
+Duplicate records will be removed during preprocessing to reduce the possibility of data leakage and artificially inflated model performance.
+
+### Data Types
+
+The dataset contains:
+
+- 54 integer features
+- 24 floating-point features
+- 1 string label column
+
+No unexpected categorical feature columns were identified during the initial inspection.
+
+## Cleaning Strategy
+
+The preprocessing pipeline will:
+
+1. Normalize column names by removing leading and trailing whitespace.
+2. Normalize attack-label text.
+3. Convert positive and negative infinite numerical values to missing values.
+4. Handle missing numerical values using median imputation.
+5. Remove exact duplicate records.
+6. Preserve the original raw CSV files without modification.
+7. Store cleaned datasets under `data/processed/`.
+
+The cleaned data will be used for subsequent exploratory analysis and machine learning experiments.
