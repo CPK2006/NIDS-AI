@@ -183,3 +183,99 @@ The preprocessing pipeline will:
 7. Store cleaned datasets under `data/processed/`.
 
 The cleaned data will be used for subsequent exploratory analysis and machine learning experiments.
+
+---
+
+## Exploratory Data Analysis — Class Distribution
+
+An exploratory analysis was performed on the cleaned CICIDS2017 dataset.
+
+The cleaned dataset contains:
+
+**2,574,264 network-flow records**
+
+### Overall Distribution
+
+| Category | Records | Percentage |
+|---|---:|---:|
+| BENIGN | 2,148,386 | 83.4563% |
+| ATTACK | 425,878 | 16.5437% |
+
+The dataset is therefore imbalanced, with benign traffic representing approximately 83.46% of all records.
+
+### Multiclass Distribution
+
+| Label | Records | Percentage |
+|---|---:|---:|
+| BENIGN | 2,148,386 | 83.4563% |
+| DoS Hulk | 172,849 | 6.7145% |
+| DDoS | 128,016 | 4.9729% |
+| PortScan | 90,819 | 3.5280% |
+| DoS GoldenEye | 10,286 | 0.3996% |
+| FTP-Patator | 5,933 | 0.2305% |
+| DoS slowloris | 5,385 | 0.2092% |
+| DoS Slowhttptest | 5,228 | 0.2031% |
+| SSH-Patator | 3,219 | 0.1250% |
+| Bot | 1,953 | 0.0759% |
+| Web Attack - Brute Force | 1,470 | 0.0571% |
+| Web Attack - XSS | 652 | 0.0253% |
+| Infiltration | 36 | 0.0014% |
+| Web Attack - Sql Injection | 21 | 0.0008% |
+| Heartbleed | 11 | 0.0004% |
+
+### EDA Observation
+
+The dataset exhibits significant class imbalance.
+
+The BENIGN class is dominant, while several attack categories contain very few observations. In particular, Infiltration, Web Attack - Sql Injection, and Heartbleed have extremely small sample sizes.
+
+Therefore, accuracy alone will not be sufficient for evaluating the NIDS.
+
+The project will emphasize:
+
+- Precision
+- Recall
+- F1-score
+- Confusion Matrix
+- Per-class performance
+- Macro-averaged metrics
+- Weighted-averaged metrics
+- ROC-AUC where applicable
+
+Class imbalance will be considered during model development and evaluation. Appropriate techniques will be investigated rather than blindly applying oversampling to every model.
+
+---
+
+## Binary Classification Analysis
+
+For the primary intrusion detection task, the original multiclass labels are converted into two categories:
+
+- `BENIGN` → BENIGN
+- All attack labels → ATTACK
+
+### Binary Distribution
+
+| Binary Class | Records | Percentage |
+|---|---:|---:|
+| BENIGN | 2,148,386 | 83.4563% |
+| ATTACK | 425,878 | 16.5437% |
+| **Total** | **2,574,264** | **100%** |
+
+### Observation
+
+The binary dataset is imbalanced, with benign traffic representing approximately 83.46% of all network flows and malicious traffic representing approximately 16.54%.
+
+Therefore, model evaluation will not rely on accuracy alone.
+
+The binary NIDS evaluation will primarily consider:
+
+- Precision
+- Recall
+- F1-score
+- Confusion Matrix
+- ROC-AUC
+- PR-AUC where appropriate
+
+Particular attention will be given to **attack recall**, because failing to detect malicious traffic is more significant for an intrusion detection system than incorrectly classifying some benign traffic as malicious.
+
+Class-weighting, sampling strategies, and model-specific imbalance handling will be investigated during the model-training phase.
