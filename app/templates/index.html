@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>CICIDS2017 NIDS</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body>
+
+    <div class="container">
+
+        <!-- ================================================= -->
+        <!-- HEADER -->
+        <!-- ================================================= -->
+
+        <header>
+
+            <div class="badge">
+                NETWORK INTRUSION DETECTION SYSTEM
+            </div>
+
+            <h1>
+                CICIDS2017
+                <span>NIDS</span>
+            </h1>
+
+            <p class="subtitle">
+                Leakage-Free Top-20 CatBoost Intrusion Detection
+            </p>
+
+            <div class="model-info">
+
+                <div>
+                    <strong>Model</strong>
+                    <span>CatBoost</span>
+                </div>
+
+                <div>
+                    <strong>Features</strong>
+                    <span>20</span>
+                </div>
+
+                <div>
+                    <strong>Threshold</strong>
+                    <span>{{ threshold }}</span>
+                </div>
+
+                <div>
+                    <strong>ROC-AUC</strong>
+                    <span>99.8995%</span>
+                </div>
+
+            </div>
+
+        </header>
+
+
+        <!-- ================================================= -->
+        <!-- MODEL STATUS -->
+        <!-- ================================================= -->
+
+        <div class="status">
+
+            {% if model_loaded %}
+
+            <span class="status-dot online"></span>
+
+            <span>
+                Detection model loaded and ready
+            </span>
+
+            {% else %}
+
+            <span class="status-dot offline"></span>
+
+            <span>
+                Model could not be loaded
+            </span>
+
+            {% endif %}
+
+        </div>
+
+
+        <!-- ================================================= -->
+        <!-- PREDICTION RESULT -->
+        <!-- ================================================= -->
+
+        {% if prediction %}
+        
+        <div class="result-card {% if prediction == 'ATTACK' %}attack{% else %}benign{% endif %}">
+        
+            <div class="result-label">
+                DETECTION RESULT
+            </div>
+        
+            <div class="result">
+                {% if prediction == "ATTACK" %}
+                ⚠ ATTACK DETECTED
+                {% else %}
+                ✓ BENIGN TRAFFIC
+                {% endif %}
+            </div>
+        
+            <div class="result-details">
+        
+                <div>
+                    <span>Attack Probability</span>
+                    <strong>{{ "%.4f"|format(probability) }}%</strong>
+                </div>
+        
+                <div>
+                    <span>Confidence</span>
+                    <strong>{{ "%.4f"|format(confidence) }}%</strong>
+                </div>
+        
+                <div>
+                    <span>Decision Threshold</span>
+                    <strong>{{ threshold }}</strong>
+                </div>
+        
+            </div>
+        
+        </div>
+        
+        {% endif %}
+
+
+        <!-- ================================================= -->
+        <!-- ERROR -->
+        <!-- ================================================= -->
+
+        {% if error %}
+
+        <div class="error">
+
+            <strong>Prediction Error</strong>
+
+            <p>{{ error }}</p>
+
+        </div>
+
+        {% endif %}
+
+
+        <!-- ================================================= -->
+        <!-- INPUT FORM -->
+        <!-- ================================================= -->
+
+        <section class="panel">
+
+            <div class="section-title">
+
+                <div>
+                    <span class="section-number">01</span>
+                    Network Flow Features
+                </div>
+
+                <span class="feature-count">
+                    20 FEATURES
+                </span>
+
+            </div>
+
+
+            <form method="POST">
+
+                <div class="feature-grid">
+
+                    {% for feature in features %}
+
+                    <div class="input-group">
+
+                        <label for="{{ feature }}">
+                            {{ feature }}
+                        </label>
+
+                        <input type="number" step="any" id="{{ feature }}" name="{{ feature }}"
+                            value="{{ values[feature] }}" placeholder="Enter value" required>
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+
+                <button type="submit">
+
+                    <span>RUN INTRUSION DETECTION</span>
+
+                    <span class="arrow">→</span>
+
+                </button>
+
+            </form>
+
+        </section>
+
+
+        <!-- ================================================= -->
+        <!-- MODEL PERFORMANCE -->
+        <!-- ================================================= -->
+
+        <section class="performance">
+
+            <div class="section-title">
+
+                <div>
+                    <span class="section-number">02</span>
+                    Model Performance
+                </div>
+
+            </div>
+
+            <div class="metrics">
+
+                <div class="metric">
+
+                    <span>Accuracy</span>
+
+                    <strong>99.0133%</strong>
+
+                </div>
+
+                <div class="metric">
+
+                    <span>Precision</span>
+
+                    <strong>99.0981%</strong>
+
+                </div>
+
+                <div class="metric">
+
+                    <span>Recall</span>
+
+                    <strong>97.9154%</strong>
+
+                </div>
+
+                <div class="metric">
+
+                    <span>F1 Score</span>
+
+                    <strong>98.5032%</strong>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ================================================= -->
+        <!-- FOOTER -->
+        <!-- ================================================= -->
+
+        <footer>
+
+            <p>
+                CICIDS2017 Network Intrusion Detection System
+            </p>
+
+            <p>
+                Leakage-Free Top-20 CatBoost Model
+            </p>
+
+        </footer>
+
+    </div>
+
+</body>
+
+</html>
