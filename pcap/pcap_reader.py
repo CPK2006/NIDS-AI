@@ -1,25 +1,38 @@
-from scapy.all import rdpcap, IP, IPv6, TCP, UDP, ICMP
+from scapy.all import PcapReader, IP, IPv6, TCP, UDP, ICMP
+from collections import Counter
 import os
 import sys
-from collections import Counter
+import time
 
+
+# ============================================================
+# CICIDS2017 NIDS - STREAMING PCAP ANALYZER
+# ============================================================
 
 def analyze_pcap(pcap_path):
 
     print("=" * 70)
-    print("CICIDS2017 NIDS - PCAP ANALYZER")
+    print("CICIDS2017 NIDS - STREAMING PCAP ANALYZER")
     print("=" * 70)
 
     if not os.path.exists(pcap_path):
-        raise FileNotFoundError(f"PCAP file not found: {pcap_path}")
+        raise FileNotFoundError(
+            f"PCAP file not found: {pcap_path}"
+        )
+
+    file_size_gb = (
+        os.path.getsize(pcap_path)
+        / (1024 ** 3)
+    )
 
     print()
-    print("Loading PCAP...")
     print(f"File: {pcap_path}")
+    print(f"File size: {file_size_gb:.2f} GB")
 
-    packets = rdpcap(pcap_path)
-
-    print(f"Total packets: {len(packets)}")
+    print()
+    print("Opening PCAP using streaming reader...")
+    print("Packets will be processed one at a time.")
+    print()
 
     protocol_counts = Counter()
 
@@ -33,130 +46,261 @@ def analyze_pcap(pcap_path):
     udp_packets = 0
     icmp_packets = 0
     ip_packets = 0
+    ipv6_packets = 0
 
-    packet_sizes = []
+    total_packets = 0
 
-    for packet in packets:
+    packet_size_total = 0
+    minimum_packet_size = None
+    maximum_packet_size = None
 
-        packet_sizes.append(len(packet))
+    start_time = time.time()
 
-        # --------------------------------------------------
-        # IPv4
-        # --------------------------------------------------
+    # --------------------------------------------------------
+    # STREAM PCAP
+    # --------------------------------------------------------
 
-        if IP in packet:
+    try:
 
-            ip_packets += 1
+        with PcapReader(pcap_path) as packets:
 
-            src_ip = packet[IP].src
-            dst_ip = packet[IP].dst
+            for packet in packets:
 
-            source_ips.add(src_ip)
-            destination_ips.add(dst_ip)
+                total_packets += 1
 
-            # TCP
-            if TCP in packet:
+                packet_length = len(packet)
 
-                tcp_packets += 1
-                protocol_counts["TCP"] += 1
+                packet_size_total += packet_length
 
-                src_port = packet[TCP].sport
-                dst_port = packet[TCP].dport
+                if (
+                    minimum_packet_size is None
+                    or packet_length < minimum_packet_size
+                ):
+                    minimum_packet_size = packet_length
 
-                flow = (
-                    src_ip,
-                    src_port,
-                    dst_ip,
-                    dst_port,
-                    "TCP"
-                )
+                if (
+                    maximum_packet_size is None
+                    or packet_length > maximum_packet_size
+                ):
+                    maximum_packet_size = packet_length
 
-                tcp_flows.add(flow)
+                # ------------------------------------------------
+                # IPv4
+                # ------------------------------------------------
 
-            # UDP
-            elif UDP in packet:
+                if IP in packet:
 
-                udp_packets += 1
-                protocol_counts["UDP"] += 1
+                    ip_packets += 1
 
-                src_port = packet[UDP].sport
-                dst_port = packet[UDP].dport
+                    src_ip = packet[IP].src
+                    dst_ip = packet[IP].dst
 
-                flow = (
-                    src_ip,
-                    src_port,
-                    dst_ip,
-                    dst_port,
-                    "UDP"
-                )
+                    source_ips.add(src_ip)
+                    destination_ips.add(dst_ip)
 
-                udp_flows.add(flow)
+                    # --------------------------------------------
+                    # TCP
+                    # --------------------------------------------
 
-            # ICMP
-            elif ICMP in packet:
+                    if TCP in packet:
 
-                icmp_packets += 1
-                protocol_counts["ICMP"] += 1
+                        tcp_packets += 1
+                        protocol_counts["TCP"] += 1
 
-        # --------------------------------------------------
-        # IPv6
-        # --------------------------------------------------
+                        src_port = packet[TCP].sport
+                        dst_port = packet[TCP].dport
 
-        elif IPv6 in packet:
+                        flow = (
+                            src_ip,
+                            src_port,
+                            dst_ip,
+                            dst_port,
+                            "TCP"
+                        )
 
-            protocol_counts["IPv6"] += 1
+                        tcp_flows.add(flow)
+
+                    # --------------------------------------------
+                    # UDP
+                    # --------------------------------------------
+
+                    elif UDP in packet:
+
+                        udp_packets += 1
+                        protocol_counts["UDP"] += 1
+
+                        src_port = packet[UDP].sport
+                        dst_port = packet[UDP].dport
+
+                        flow = (
+                            src_ip,
+                            src_port,
+                            dst_ip,
+                            dst_port,
+                            "UDP"
+                        )
+
+                        udp_flows.add(flow)
+
+                    # --------------------------------------------
+                    # ICMP
+                    # --------------------------------------------
+
+                    elif ICMP in packet:
+
+                        icmp_packets += 1
+                        protocol_counts["ICMP"] += 1
+
+                # ------------------------------------------------
+                # IPv6
+                # ------------------------------------------------
+
+                elif IPv6 in packet:
+
+                    ipv6_packets += 1
+                    protocol_counts["IPv6"] += 1
+
+                # ------------------------------------------------
+                # PROGRESS
+                # ------------------------------------------------
+
+                if total_packets % 100000 == 0:
+
+                    elapsed = time.time() - start_time
+
+                    rate = (
+                        total_packets / elapsed
+                        if elapsed > 0
+                        else 0
+                    )
+
+                    print(
+                        f"Processed: {total_packets:,} packets | "
+                        f"Rate: {rate:,.0f} packets/sec",
+                        flush=True
+                    )
+
+    except KeyboardInterrupt:
+
+        print()
+        print("PCAP processing interrupted by user.")
+        print(
+            f"Packets processed before stopping: "
+            f"{total_packets:,}"
+        )
+
+        return
+
+    elapsed = time.time() - start_time
+
+    # ========================================================
+    # FINAL RESULTS
+    # ========================================================
 
     print()
     print("=" * 70)
     print("PCAP SUMMARY")
     print("=" * 70)
 
-    print(f"Total packets          : {len(packets)}")
-    print(f"IP packets             : {ip_packets}")
-    print(f"TCP packets            : {tcp_packets}")
-    print(f"UDP packets            : {udp_packets}")
-    print(f"ICMP packets           : {icmp_packets}")
+    print()
+    print(f"Total packets          : {total_packets:,}")
+    print(f"IPv4 packets           : {ip_packets:,}")
+    print(f"IPv6 packets           : {ipv6_packets:,}")
+    print(f"TCP packets            : {tcp_packets:,}")
+    print(f"UDP packets            : {udp_packets:,}")
+    print(f"ICMP packets           : {icmp_packets:,}")
 
     print()
     print("Protocol distribution:")
 
     for protocol, count in protocol_counts.most_common():
-        print(f"  {protocol:<10}: {count}")
+
+        percentage = (
+            count / total_packets * 100
+            if total_packets > 0
+            else 0
+        )
+
+        print(
+            f"  {protocol:<10}: "
+            f"{count:,} "
+            f"({percentage:.2f}%)"
+        )
 
     print()
-    print(f"Unique source IPs      : {len(source_ips)}")
-    print(f"Unique destination IPs : {len(destination_ips)}")
+    print(f"Unique source IPs      : {len(source_ips):,}")
+    print(
+        f"Unique destination IPs : "
+        f"{len(destination_ips):,}"
+    )
 
     print()
-    print(f"TCP flows              : {len(tcp_flows)}")
-    print(f"UDP flows              : {len(udp_flows)}")
+    print(f"TCP flows              : {len(tcp_flows):,}")
+    print(f"UDP flows              : {len(udp_flows):,}")
 
-    if packet_sizes:
+    if total_packets > 0:
+
+        average_packet_size = (
+            packet_size_total / total_packets
+        )
 
         print()
         print("Packet size statistics:")
-        print(f"  Minimum              : {min(packet_sizes)} bytes")
-        print(f"  Maximum              : {max(packet_sizes)} bytes")
+
+        print(
+            f"  Minimum              : "
+            f"{minimum_packet_size} bytes"
+        )
+
+        print(
+            f"  Maximum              : "
+            f"{maximum_packet_size} bytes"
+        )
+
         print(
             f"  Average              : "
-            f"{sum(packet_sizes) / len(packet_sizes):.2f} bytes"
+            f"{average_packet_size:.2f} bytes"
+        )
+
+        print(
+            f"  Total bytes          : "
+            f"{packet_size_total:,}"
+        )
+
+    print()
+    print(
+        f"Processing time        : "
+        f"{elapsed:.2f} seconds"
+    )
+
+    if elapsed > 0:
+
+        print(
+            f"Processing rate        : "
+            f"{total_packets / elapsed:,.0f} packets/sec"
         )
 
     print()
     print("=" * 70)
-    print("PCAP ANALYSIS COMPLETED")
+    print("STREAMING PCAP ANALYSIS COMPLETED")
     print("=" * 70)
 
+
+# ============================================================
+# MAIN
+# ============================================================
 
 if __name__ == "__main__":
 
     if len(sys.argv) != 2:
 
+        print()
         print("Usage:")
         print(
             "python pcap\\pcap_reader.py "
             "<path_to_pcap>"
         )
+        print()
 
         sys.exit(1)
 
