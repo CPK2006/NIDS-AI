@@ -18,54 +18,49 @@ print("=" * 70)
 print("CICIDS2017 LEAKAGE-FREE TOP-20 CATBOOST")
 print("=" * 70)
 
-# ============================================================
+# ==============================================================
 # PATHS
-# ============================================================
+# ==============================================================
 
 DATA_PATH = "data/sample/cicids2017_binary_deduplicated.csv"
 
-MODEL_PATH = "results/models/leakage_free_top20_model.cbm"
-RESULT_PATH = "results/models/leakage_free_top20_results.json"
+MODEL_OUTPUT = (
+    "results/models/"
+    "leakage_free_top20_catboost_model.cbm"
+)
+
+RESULT_OUTPUT = (
+    "results/models/"
+    "leakage_free_top20_results.json"
+)
+
+FEATURE_OUTPUT = (
+    "results/models/"
+    "leakage_free_top20_features.csv"
+)
+
+THRESHOLD_OUTPUT = (
+    "results/models/"
+    "leakage_free_top20_validation_thresholds.csv"
+)
 
 os.makedirs("results/models", exist_ok=True)
 
-# ============================================================
-# TOP 20 FEATURES
-# ============================================================
-# These are the exact Top-20 features from your previous
-# sequential Top-20 experiment.
+# ==============================================================
+# PARAMETERS
+# ==============================================================
 
-selected_features = [
-    "Destination Port",
-    "Bwd Packet Length Std",
-    "Init_Win_bytes_forward",
-    "Init_Win_bytes_backward",
-    "Fwd Header Length",
-    "Average Packet Size",
-    "min_seg_size_forward",
-    "Flow IAT Mean",
-    "Bwd Header Length",
-    "PSH Flag Count",
-    "Flow IAT Min",
-    "Fwd Packet Length Max",
-    "Fwd IAT Min",
-    "Total Length of Bwd Packets",
-    "Max Packet Length",
-    "Fwd IAT Total",
-    "Packet Length Std",
-    "Flow Bytes/s",
-    "Bwd Packet Length Mean",
-    "Packet Length Variance"
-]
+SELECTION_ITERATIONS = 500
+FINAL_ITERATIONS = 500
+DEPTH = 10
+LEARNING_RATE = 0.05
+RANDOM_SEED = 42
 
-print("\nSelected Top-20 features:")
+TOP_K = 20
 
-for i, feature in enumerate(selected_features, 1):
-    print(f"{i:2d}. {feature}")
-
-# ============================================================
-# LOAD DATA
-# ============================================================
+# ==============================================================
+# 1. LOAD DATA
+# ==============================================================
 
 print("\nLoading complete deduplicated dataset...")
 
@@ -73,36 +68,19 @@ df = pd.read_csv(DATA_PATH)
 
 print("Dataset shape:", df.shape)
 
-# ============================================================
-# VERIFY FEATURES
-# ============================================================
+# ==============================================================
+# 2. SEPARATE FEATURES AND TARGET
+# ==============================================================
 
-missing = [
-    feature
-    for feature in selected_features
-    if feature not in df.columns
-]
-
-if missing:
-    print("\nERROR: Missing features:")
-    for feature in missing:
-        print(" -", feature)
-
-    raise ValueError("One or more Top-20 features are missing.")
-
-# ============================================================
-# FEATURES / TARGET
-# ============================================================
-
-X = df[selected_features].copy()
-y = df["Binary_Label"].copy()
+X = df.drop(columns=["Binary_Label"])
+y = df["Binary_Label"]
 
 print("\nFeature matrix:", X.shape)
 print("Target:", y.shape)
 
-# ============================================================
-# SEQUENTIAL SPLIT
-# ============================================================
+# ==============================================================
+# 3. SEQUENTIAL 70 / 10 / 20 SPLIT
+# ==============================================================
 
 print("\n" + "=" * 70)
 print("SEQUENTIAL SPLIT")
@@ -110,21 +88,17 @@ print("=" * 70)
 
 n = len(df)
 
-# 70% train
-# 10% validation
-# 20% test
-
 train_end = int(n * 0.70)
 val_end = int(n * 0.80)
 
-X_train = X.iloc[:train_end]
-y_train = y.iloc[:train_end]
+X_train = X.iloc[:train_end].copy()
+y_train = y.iloc[:train_end].copy()
 
-X_val = X.iloc[train_end:val_end]
-y_val = y.iloc[train_end:val_end]
+X_val = X.iloc[train_end:val_end].copy()
+y_val = y.iloc[train_end:val_end].copy()
 
-X_test = X.iloc[val_end:]
-y_test = y.iloc[val_end:]
+X_test = X.iloc[val_end:].copy()
+y_test = y.iloc[val_end:].copy()
 
 print("\nTraining:")
 print("X_train:", X_train.shape)
@@ -138,9 +112,9 @@ print("\nTesting:")
 print("X_test:", X_test.shape)
 print("y_test:", y_test.shape)
 
-# ============================================================
-# CLASS DISTRIBUTION
-# ============================================================
+# ==============================================================
+# 4. CLASS DISTRIBUTIONS
+# ==============================================================
 
 print("\n" + "=" * 70)
 print("CLASS DISTRIBUTIONS")
@@ -153,6 +127,7 @@ for name, target in [
 ]:
 
     print(f"\n{name}:")
+
     print(target.value_counts())
 
     print(
@@ -161,75 +136,283 @@ for name, target in [
         .round(3)
     )
 
-# ============================================================
-# CATBOOST
-# ============================================================
+# ==============================================================
+# 5. BASIC TRAINING-DATA CLEANING
+#    IMPORTANT:
+#    Everything here is calculated ONLY from TRAINING DATA.
+# ==============================================================
 
 print("\n" + "=" * 70)
-print("CATBOOST PARAMETERS")
+print("TRAINING-ONLY FEATURE CLEANING")
 print("=" * 70)
 
-print("Iterations    : 500")
-print("Depth         : 10")
-print("Learning rate : 0.05")
+# --------------------------------------------------------------
+# Remove constant features based ONLY on training data
+# --------------------------------------------------------------
 
-model = CatBoostClassifier(
-    iterations=500,
-    depth=10,
-    learning_rate=0.05,
+train_std = X_train.std()
+
+constant_features = train_std[
+    train_std == 0
+].index.tolist()
+
+print("\nConstant features found in training:", len(constant_features))
+
+if constant_features:
+
+    for feature in constant_features:
+        print(" -", feature)
+
+    X_train = X_train.drop(
+        columns=constant_features
+    )
+
+    X_val = X_val.drop(
+        columns=constant_features
+    )
+
+    X_test = X_test.drop(
+        columns=constant_features
+    )
+
+# --------------------------------------------------------------
+# Remove duplicate columns based ONLY on training data
+# --------------------------------------------------------------
+
+print("\nChecking duplicate feature columns...")
+
+duplicate_columns = []
+
+columns = X_train.columns
+
+for i in range(len(columns)):
+
+    for j in range(i + 1, len(columns)):
+
+        col1 = columns[i]
+        col2 = columns[j]
+
+        if X_train[col1].equals(X_train[col2]):
+
+            duplicate_columns.append(col2)
+
+duplicate_columns = list(
+    dict.fromkeys(duplicate_columns)
+)
+
+print(
+    "Duplicate feature columns found:",
+    len(duplicate_columns)
+)
+
+if duplicate_columns:
+
+    for feature in duplicate_columns:
+        print(" -", feature)
+
+    X_train = X_train.drop(
+        columns=duplicate_columns
+    )
+
+    X_val = X_val.drop(
+        columns=duplicate_columns
+    )
+
+    X_test = X_test.drop(
+        columns=duplicate_columns
+    )
+
+print(
+    "\nFeatures available for selection:",
+    X_train.shape[1]
+)
+
+# ==============================================================
+# 6. TRAIN FEATURE-SELECTION MODEL
+# ==============================================================
+
+print("\n" + "=" * 70)
+print("TRAINING FEATURE-SELECTION MODEL")
+print("=" * 70)
+
+print(
+    "\nIMPORTANT:"
+    "\nFeature selection uses TRAINING DATA ONLY."
+    "\nValidation and test data are NOT used."
+)
+
+selection_model = CatBoostClassifier(
+    iterations=SELECTION_ITERATIONS,
+    depth=DEPTH,
+    learning_rate=LEARNING_RATE,
     loss_function="Logloss",
     eval_metric="AUC",
-    random_seed=42,
+    random_seed=RANDOM_SEED,
     verbose=100,
-    thread_count=-1
+    allow_writing_files=False
 )
 
-# ============================================================
-# TRAIN
-# ============================================================
+selection_start = time.time()
+
+selection_model.fit(
+    X_train,
+    y_train
+)
+
+selection_time = time.time() - selection_start
+
+print(
+    f"\nFeature-selection training time: "
+    f"{selection_time:.2f} seconds"
+)
+
+# ==============================================================
+# 7. FEATURE IMPORTANCE
+# ==============================================================
 
 print("\n" + "=" * 70)
-print("TRAINING LEAKAGE-FREE TOP-20 MODEL")
+print("SELECTING TOP 20 FEATURES")
 print("=" * 70)
 
-start = time.time()
+importance = selection_model.get_feature_importance()
 
-model.fit(
-    X_train,
-    y_train,
-    eval_set=(X_val, y_val),
-    use_best_model=True,
-    early_stopping_rounds=50
+importance_df = pd.DataFrame({
+    "Feature": X_train.columns,
+    "Importance": importance
+})
+
+importance_df = importance_df.sort_values(
+    "Importance",
+    ascending=False
+).reset_index(drop=True)
+
+top20_df = importance_df.head(TOP_K)
+
+top20_features = top20_df["Feature"].tolist()
+
+print("\nTop 20 features selected from TRAIN ONLY:")
+
+for i, row in top20_df.iterrows():
+
+    print(
+        f"{i + 1:2d}. "
+        f"{row['Feature']:<35} "
+        f"{row['Importance']:.6f}"
+    )
+
+# Save feature importance
+importance_df.to_csv(
+    FEATURE_OUTPUT,
+    index=False
 )
 
-training_time = time.time() - start
+print("\nFeature list saved:")
+print(FEATURE_OUTPUT)
 
-print("\nTraining completed.")
-print("Training time:", round(training_time, 2), "seconds")
-print("Trees:", model.tree_count_)
+# ==============================================================
+# 8. REDUCE DATASETS TO TOP 20
+# ==============================================================
 
-# ============================================================
-# SAVE MODEL
-# ============================================================
+X_train_top20 = X_train[
+    top20_features
+].copy()
 
-model.save_model(MODEL_PATH)
+X_val_top20 = X_val[
+    top20_features
+].copy()
+
+X_test_top20 = X_test[
+    top20_features
+].copy()
+
+print("\nTop-20 shapes:")
+
+print(
+    "X_train_top20:",
+    X_train_top20.shape
+)
+
+print(
+    "X_val_top20  :",
+    X_val_top20.shape
+)
+
+print(
+    "X_test_top20 :",
+    X_test_top20.shape
+)
+
+# ==============================================================
+# 9. TRAIN FINAL TOP-20 MODEL
+# ==============================================================
+
+print("\n" + "=" * 70)
+print("TRAINING FINAL TOP-20 CATBOOST")
+print("=" * 70)
+
+final_model = CatBoostClassifier(
+    iterations=FINAL_ITERATIONS,
+    depth=DEPTH,
+    learning_rate=LEARNING_RATE,
+    loss_function="Logloss",
+    eval_metric="AUC",
+    random_seed=RANDOM_SEED,
+    verbose=100,
+    allow_writing_files=False
+)
+
+final_start = time.time()
+
+final_model.fit(
+    X_train_top20,
+    y_train
+)
+
+final_training_time = (
+    time.time() - final_start
+)
+
+print(
+    f"\nFinal training time: "
+    f"{final_training_time:.2f} seconds"
+)
+
+print(
+    "Trees:",
+    final_model.tree_count_
+)
+
+# ==============================================================
+# 10. SAVE FINAL MODEL
+# ==============================================================
+
+final_model.save_model(
+    MODEL_OUTPUT
+)
 
 print("\nModel saved:")
-print(MODEL_PATH)
+print(MODEL_OUTPUT)
 
-# ============================================================
-# VALIDATION PROBABILITIES
-# ============================================================
+# ==============================================================
+# 11. VALIDATION PROBABILITIES
+# ==============================================================
 
 print("\n" + "=" * 70)
 print("VALIDATION THRESHOLD SELECTION")
 print("=" * 70)
 
-print("\nGenerating validation probabilities...")
+print(
+    "\nGenerating validation probabilities..."
+)
 
-val_prob = model.predict_proba(X_val)[:, 1]
+val_probabilities = final_model.predict_proba(
+    X_val_top20
+)[:, 1]
 
-# Test many thresholds
+# ==============================================================
+# 12. SEARCH THRESHOLDS
+# ==============================================================
+
 thresholds = np.arange(
     0.001,
     0.501,
@@ -240,61 +423,69 @@ threshold_results = []
 
 for threshold in thresholds:
 
-    val_pred = (
-        val_prob >= threshold
+    y_val_pred = (
+        val_probabilities >= threshold
     ).astype(int)
 
     tn, fp, fn, tp = confusion_matrix(
         y_val,
-        val_pred,
+        y_val_pred,
         labels=[0, 1]
     ).ravel()
 
     accuracy = accuracy_score(
         y_val,
-        val_pred
+        y_val_pred
     )
 
     precision = precision_score(
         y_val,
-        val_pred,
+        y_val_pred,
         zero_division=0
     )
 
     recall = recall_score(
         y_val,
-        val_pred,
+        y_val_pred,
         zero_division=0
     )
 
     f1 = f1_score(
         y_val,
-        val_pred,
+        y_val_pred,
         zero_division=0
     )
 
     fpr = fp / (fp + tn)
+
     fnr = fn / (fn + tp)
 
     threshold_results.append({
-        "Threshold": float(threshold),
-        "Accuracy": float(accuracy),
-        "Precision": float(precision),
-        "Recall": float(recall),
-        "F1": float(f1),
-        "FPR": float(fpr),
-        "FNR": float(fnr),
-        "TN": int(tn),
-        "FP": int(fp),
-        "FN": int(fn),
-        "TP": int(tp)
+        "Threshold": threshold,
+        "Accuracy": accuracy,
+        "Precision": precision,
+        "Recall": recall,
+        "F1": f1,
+        "FPR": fpr,
+        "FNR": fnr,
+        "TN": tn,
+        "FP": fp,
+        "FN": fn,
+        "TP": tp
     })
 
-threshold_df = pd.DataFrame(threshold_results)
+threshold_df = pd.DataFrame(
+    threshold_results
+)
 
-# ============================================================
-# BEST VALIDATION THRESHOLD
-# ============================================================
+threshold_df.to_csv(
+    THRESHOLD_OUTPUT,
+    index=False
+)
+
+# ==============================================================
+# 13. SELECT VALIDATION THRESHOLD
+# ==============================================================
 
 best_row = threshold_df.loc[
     threshold_df["F1"].idxmax()
@@ -305,64 +496,99 @@ best_threshold = float(
 )
 
 print("\nBest validation threshold:")
-print(best_threshold)
+print(
+    f"{best_threshold:.3f}"
+)
 
 print("\nValidation performance:")
+
 print(
-    f"ACCURACY : {best_row['Accuracy']:.6f}"
-)
-print(
-    f"PRECISION: {best_row['Precision']:.6f}"
-)
-print(
-    f"RECALL   : {best_row['Recall']:.6f}"
-)
-print(
-    f"F1       : {best_row['F1']:.6f}"
-)
-print(
-    f"FPR      : {best_row['FPR']:.6f}"
-)
-print(
-    f"FNR      : {best_row['FNR']:.6f}"
+    f"Accuracy  : {best_row['Accuracy']:.6f}"
 )
 
-# ============================================================
-# FINAL TEST
-# ============================================================
+print(
+    f"Precision : {best_row['Precision']:.6f}"
+)
+
+print(
+    f"Recall    : {best_row['Recall']:.6f}"
+)
+
+print(
+    f"F1        : {best_row['F1']:.6f}"
+)
+
+print(
+    f"FPR       : {best_row['FPR']:.6f}"
+)
+
+print(
+    f"FNR       : {best_row['FNR']:.6f}"
+)
+
+print(
+    f"TN        : {int(best_row['TN'])}"
+)
+
+print(
+    f"FP        : {int(best_row['FP'])}"
+)
+
+print(
+    f"FN        : {int(best_row['FN'])}"
+)
+
+print(
+    f"TP        : {int(best_row['TP'])}"
+)
+
+# ==============================================================
+# 14. FINAL TEST EVALUATION
+# ==============================================================
 
 print("\n" + "=" * 70)
-print("FINAL TEST EVALUATION")
+print("FINAL UNTOUCHED TEST EVALUATION")
 print("=" * 70)
 
 print(
-    "\nIMPORTANT: Test data has NOT been used "
-    "for threshold selection."
+    "\nIMPORTANT:"
+    "\nTest data has NOT been used for:"
+    "\n- feature selection"
+    "\n- model training"
+    "\n- threshold selection"
 )
 
-print("\nGenerating test probabilities...")
+print(
+    "\nGenerating test probabilities..."
+)
 
-test_prob = model.predict_proba(X_test)[:, 1]
+prediction_start = time.time()
 
-# ------------------------------------------------------------
-# Threshold 0.50
-# ------------------------------------------------------------
+test_probabilities = final_model.predict_proba(
+    X_test_top20
+)[:, 1]
 
-test_pred_050 = (
-    test_prob >= 0.50
+prediction_time = (
+    time.time() - prediction_start
+)
+
+# ==============================================================
+# 15. TEST PREDICTIONS
+# ==============================================================
+
+# Default threshold
+y_test_pred_50 = (
+    test_probabilities >= 0.50
 ).astype(int)
 
-# ------------------------------------------------------------
 # Validation-selected threshold
-# ------------------------------------------------------------
-
-test_pred_selected = (
-    test_prob >= best_threshold
+y_test_pred_selected = (
+    test_probabilities >= best_threshold
 ).astype(int)
 
-# ============================================================
-# METRIC FUNCTION
-# ============================================================
+# ==============================================================
+# 16. METRIC FUNCTION
+# ==============================================================
 
 def calculate_metrics(
     y_true,
@@ -405,6 +631,7 @@ def calculate_metrics(
     )
 
     fpr = fp / (fp + tn)
+
     fnr = fn / (fn + tp)
 
     return {
@@ -422,72 +649,116 @@ def calculate_metrics(
         "total_errors": int(fp + fn)
     }
 
+# ==============================================================
+# 17. CALCULATE FINAL TEST METRICS
+# ==============================================================
 
-metrics_050 = calculate_metrics(
+metrics_50 = calculate_metrics(
     y_test,
-    test_pred_050,
-    test_prob
+    y_test_pred_50,
+    test_probabilities
 )
 
 metrics_selected = calculate_metrics(
     y_test,
-    test_pred_selected,
-    test_prob
+    y_test_pred_selected,
+    test_probabilities
 )
 
-# ============================================================
-# COMPARISON
-# ============================================================
+# ==============================================================
+# 18. DISPLAY RESULTS
+# ==============================================================
 
 print("\n" + "=" * 70)
-print("FINAL TEST COMPARISON")
+print("FINAL TEST RESULTS")
 print("=" * 70)
 
 print(
-    f"{'Metric':25s}"
-    f"{'Threshold 0.50':>20s}"
-    f"{'Selected Threshold':>22s}"
+    f"\n{'Metric':<25}"
+    f"{'Threshold 0.50':>18}"
+    f"{'Selected Threshold':>22}"
 )
 
 print("-" * 70)
 
-display_metrics = [
-    ("Accuracy", "accuracy"),
-    ("Precision", "precision"),
-    ("Recall", "recall"),
-    ("F1-score", "f1"),
-    ("ROC-AUC", "roc_auc"),
-    ("False Positive Rate", "fpr"),
-    ("False Negative Rate", "fnr"),
-    ("False Positives", "fp"),
-    ("False Negatives", "fn"),
-    ("Total Errors", "total_errors")
+rows = [
+    (
+        "Accuracy",
+        metrics_50["accuracy"],
+        metrics_selected["accuracy"]
+    ),
+    (
+        "Precision",
+        metrics_50["precision"],
+        metrics_selected["precision"]
+    ),
+    (
+        "Recall",
+        metrics_50["recall"],
+        metrics_selected["recall"]
+    ),
+    (
+        "F1-score",
+        metrics_50["f1"],
+        metrics_selected["f1"]
+    ),
+    (
+        "ROC-AUC",
+        metrics_50["roc_auc"],
+        metrics_selected["roc_auc"]
+    ),
+    (
+        "False Positive Rate",
+        metrics_50["fpr"],
+        metrics_selected["fpr"]
+    ),
+    (
+        "False Negative Rate",
+        metrics_50["fnr"],
+        metrics_selected["fnr"]
+    ),
+    (
+        "False Positives",
+        metrics_50["fp"],
+        metrics_selected["fp"]
+    ),
+    (
+        "False Negatives",
+        metrics_50["fn"],
+        metrics_selected["fn"]
+    ),
+    (
+        "Total Errors",
+        metrics_50["total_errors"],
+        metrics_selected["total_errors"]
+    )
 ]
 
-for label, key in display_metrics:
+for name, a, b in rows:
 
-    a = metrics_050[key]
-    b = metrics_selected[key]
-
-    if isinstance(a, float):
+    if name in [
+        "False Positives",
+        "False Negatives",
+        "Total Errors"
+    ]:
 
         print(
-            f"{label:25s}"
-            f"{a:20.6f}"
-            f"{b:22.6f}"
+            f"{name:<25}"
+            f"{a:>18.0f}"
+            f"{b:>22.0f}"
         )
 
     else:
 
         print(
-            f"{label:25s}"
-            f"{a:20d}"
-            f"{b:22d}"
+            f"{name:<25}"
+            f"{a:>18.6f}"
+            f"{b:>22.6f}"
         )
 
-# ============================================================
-# CONFUSION MATRICES
-# ============================================================
+# ==============================================================
+# 19. CONFUSION MATRICES
+# ==============================================================
 
 print("\n" + "=" * 70)
 print("CONFUSION MATRICES")
@@ -495,155 +766,202 @@ print("=" * 70)
 
 print("\nThreshold = 0.50")
 
-print(
-    confusion_matrix(
-        y_test,
-        test_pred_050
-    )
+cm_50 = confusion_matrix(
+    y_test,
+    y_test_pred_50,
+    labels=[0, 1]
 )
+
+print(cm_50)
 
 print(
     f"\nValidation-selected threshold = "
     f"{best_threshold:.3f}"
 )
 
-print(
-    confusion_matrix(
-        y_test,
-        test_pred_selected
-    )
+cm_selected = confusion_matrix(
+    y_test,
+    y_test_pred_selected,
+    labels=[0, 1]
 )
 
-# ============================================================
-# FEATURE IMPORTANCE
-# ============================================================
+print(cm_selected)
+
+# ==============================================================
+# 20. FINAL FEATURE IMPORTANCE
+# ==============================================================
 
 print("\n" + "=" * 70)
-print("TOP-20 FEATURE IMPORTANCE")
+print("FINAL TOP-20 FEATURE IMPORTANCE")
 print("=" * 70)
 
-importance = pd.DataFrame({
-    "Feature": selected_features,
-    "Importance": model.get_feature_importance()
+final_importance = pd.DataFrame({
+    "Feature": top20_features,
+    "Importance": final_model.get_feature_importance()
 })
 
-importance = importance.sort_values(
+final_importance = final_importance.sort_values(
     "Importance",
     ascending=False
 )
 
 print(
-    importance.to_string(
+    final_importance.to_string(
         index=False
     )
 )
 
-# ============================================================
-# SAVE THRESHOLD RESULTS
-# ============================================================
+# ==============================================================
+# 21. SAVE JSON RESULTS
+# ==============================================================
 
-threshold_output = (
-    "results/models/"
-    "leakage_free_top20_thresholds.csv"
-)
+results = {
 
-threshold_df.to_csv(
-    threshold_output,
-    index=False
-)
+    "experiment":
+        "Leakage-Free Sequential Top-20 CatBoost",
 
-# ============================================================
-# SAVE FINAL RESULTS
-# ============================================================
+    "dataset":
+        DATA_PATH,
 
-result = {
-    "dataset": "CICIDS2017",
+    "feature_selection":
+        "Training data only",
 
-    "method":
-        "Leakage-free sequential Top-20",
+    "feature_count":
+        len(top20_features),
 
-    "dataset_shape":
-        list(df.shape),
+    "top20_features":
+        top20_features,
 
-    "train_shape":
-        list(X_train.shape),
+    "removed_constant_features":
+        constant_features,
 
-    "validation_shape":
-        list(X_val.shape),
+    "removed_duplicate_features":
+        duplicate_columns,
 
-    "test_shape":
-        list(X_test.shape),
-
-    "selected_features":
-        selected_features,
-
-    "catboost": {
-        "iterations": 500,
-        "depth": 10,
-        "learning_rate": 0.05,
-        "tree_count": int(model.tree_count_),
-        "training_time_seconds":
-            float(training_time)
+    "split": {
+        "train": "first 70%",
+        "validation": "next 10%",
+        "test": "final 20%"
     },
 
-    "validation_threshold":
+    "shapes": {
+        "train":
+            list(X_train_top20.shape),
+
+        "validation":
+            list(X_val_top20.shape),
+
+        "test":
+            list(X_test_top20.shape)
+    },
+
+    "parameters": {
+        "selection_iterations":
+            SELECTION_ITERATIONS,
+
+        "final_iterations":
+            FINAL_ITERATIONS,
+
+        "depth":
+            DEPTH,
+
+        "learning_rate":
+            LEARNING_RATE,
+
+        "random_seed":
+            RANDOM_SEED
+    },
+
+    "timing": {
+
+        "feature_selection_training_seconds":
+            selection_time,
+
+        "final_training_seconds":
+            final_training_time,
+
+        "prediction_seconds":
+            prediction_time
+    },
+
+    "validation_selected_threshold":
         best_threshold,
 
     "validation_metrics": {
+
         "accuracy":
             float(best_row["Accuracy"]),
+
         "precision":
             float(best_row["Precision"]),
+
         "recall":
             float(best_row["Recall"]),
+
         "f1":
             float(best_row["F1"]),
+
         "fpr":
             float(best_row["FPR"]),
+
         "fnr":
-            float(best_row["FNR"])
+            float(best_row["FNR"]),
+
+        "tn":
+            int(best_row["TN"]),
+
+        "fp":
+            int(best_row["FP"]),
+
+        "fn":
+            int(best_row["FN"]),
+
+        "tp":
+            int(best_row["TP"])
     },
 
-    "test_threshold_0.50":
-        metrics_050,
+    "test_threshold_0_50":
+        metrics_50,
 
-    "test_selected_threshold":
-        metrics_selected,
-
-    "feature_importance": [
-        {
-            "Feature":
-                row["Feature"],
-            "Importance":
-                float(row["Importance"])
-        }
-        for _, row in importance.iterrows()
-    ]
+    "test_validation_selected_threshold":
+        metrics_selected
 }
 
 with open(
-    RESULT_PATH,
+    RESULT_OUTPUT,
     "w"
 ) as f:
 
     json.dump(
-        result,
+        results,
         f,
         indent=4
     )
 
-# ============================================================
-# DONE
-# ============================================================
+# ==============================================================
+# 22. FINAL OUTPUT
+# ==============================================================
 
 print("\n" + "=" * 70)
 print("FILES SAVED")
 print("=" * 70)
 
-print(MODEL_PATH)
-print(RESULT_PATH)
-print(threshold_output)
+print(
+    MODEL_OUTPUT
+)
+
+print(
+    RESULT_OUTPUT
+)
+
+print(
+    FEATURE_OUTPUT
+)
+
+print(
+    THRESHOLD_OUTPUT
+)
 
 print("\n" + "=" * 70)
-print("LEAKAGE-FREE TOP-20 TRAINING COMPLETED")
+print("LEAKAGE-FREE TOP-20 EXPERIMENT COMPLETED")
 print("=" * 70)

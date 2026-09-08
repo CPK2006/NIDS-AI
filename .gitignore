@@ -60,3 +60,9 @@ data/features/
 
 # CatBoost training information
 catboost_info/
+
+# PCAP captures & PCAP feature exports
+*.pcap
+*.cap
+data/pcap/*
+!data/pcap/.gitkeep

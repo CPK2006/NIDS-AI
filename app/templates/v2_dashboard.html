@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NIDS-AI V2 - Dynamic Real-Time Intrusion Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='v2_style.css') }}">
+</head>
+<body class="v2-theme">
+
+    <!-- ================================================= -->
+    <!-- NAVIGATION BAR -->
+    <!-- ================================================= -->
+    <nav class="nav-bar v2-nav">
+        <div class="nav-brand">
+            <span class="shield-icon">⚡</span>
+            <strong>NIDS-AI V2 Real-Time Engine</strong>
+        </div>
+        <div class="nav-links">
+            <a href="/" class="nav-link">V1: Static Detection</a>
+            <a href="/v2" class="nav-link active highlight">V2: Real-Time Dynamic Tracking ⚡</a>
+            <a href="/presentation" class="nav-link">Presentation Deck 📊</a>
+        </div>
+    </nav>
+
+    <div class="v2-container">
+
+        <!-- ================================================= -->
+        <!-- HEADER PANEL -->
+        <!-- ================================================= -->
+        <header class="v2-header">
+            <div class="header-main">
+                <div>
+                    <div class="v2-badge">DYNAMIC INTEL & RECON</div>
+                    <h1>Real-Time <span>Network Intrusion Tracker</span></h1>
+                    <p class="subtitle">Live Scapy Packet Sniffing & Dynamic Network Flow Threat Classification (RandomForest V2)</p>
+                    <p class="subtitle-tip">💡 <strong>Tip for Local Testing:</strong> Select <em>PCAP File Replay Simulation</em> or <em>Software Loopback Interface</em> to test live packet flows & attack alerts.</p>
+                </div>
+                <div class="threat-badge-container">
+                    <div class="threat-label">SYSTEM THREAT LEVEL</div>
+                    <div id="threatLevelBadge" class="threat-badge threat-low">LOW</div>
+                </div>
+            </div>
+
+            <!-- CONTROLS BAR -->
+            <div class="controls-panel">
+                <div class="control-group">
+                    <label>Sniffer Mode / Source</label>
+                    <select id="captureMode">
+                        <option value="live">Live Network Sniffing</option>
+                        <option value="pcap">PCAP File Replay Simulation</option>
+                    </select>
+                </div>
+
+                <div class="control-group" id="ifaceGroup">
+                    <label>Interface</label>
+                    <select id="interfaceSelect">
+                        <option value="default">Default Network Adapter</option>
+                    </select>
+                </div>
+
+                <div class="control-group hidden" id="pcapGroup">
+                    <label>PCAP File Path</label>
+                    <input type="text" id="pcapPathInput" value="data/pcap/test_100k.pcap">
+                </div>
+
+                <div class="action-buttons">
+                    <button id="btnStart" class="btn-start" onclick="startSniffer()">
+                        <span class="btn-icon">▶</span> Start Tracking
+                    </button>
+                    <button id="btnStop" class="btn-stop disabled" onclick="stopSniffer()" disabled>
+                        <span class="btn-icon">⏹</span> Stop Engine
+                    </button>
+                    <button id="btnSimulate" class="btn-simulate" onclick="triggerSimulation()">
+                        <span class="btn-icon">🔥</span> Simulate Attack Traffic
+                    </button>
+                    <button id="btnClear" class="btn-clear" onclick="clearAlerts()">
+                        🧹 Clear Alerts
+                    </button>
+                </div>
+            </div>
+            
+            <div id="engineStatusBanner" class="status-banner">
+                <span id="statusIndicatorDot" class="status-dot offline"></span>
+                <span id="statusBannerText">Engine Idle - Ready to start network capture</span>
+            </div>
+        </header>
+
+        <!-- ================================================= -->
+        <!-- KPI METRICS GRID -->
+        <!-- ================================================= -->
+        <section class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-title">Packets Inspected</div>
+                <div id="kpiPackets" class="kpi-value">0</div>
+                <div class="kpi-sub">Total Packets Processed</div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-title">Active Flows</div>
+                <div id="kpiActiveFlows" class="kpi-value">0</div>
+                <div class="kpi-sub">Rolling Window Buffer</div>
+            </div>
+
+            <div class="kpi-card benign-card">
+                <div class="kpi-title">Benign Flows</div>
+                <div id="kpiBenign" class="kpi-value">0</div>
+                <div class="kpi-sub">Normal Network Activity</div>
+            </div>
+
+            <div class="kpi-card attack-card">
+                <div class="kpi-title">Attacks Flagged</div>
+                <div id="kpiAttacks" class="kpi-value">0</div>
+                <div class="kpi-sub">Intrusion Alerts Raised</div>
+            </div>
+        </section>
+
+        <!-- ================================================= -->
+        <!-- REAL-TIME ALERT STREAM TABLE -->
+        <!-- ================================================= -->
+        <section class="alert-section">
+            <div class="section-header">
+                <div>
+                    <h2>Live Intrusion Alerts Stream</h2>
+                    <p>Dynamic flow classification feed updated in real time</p>
+                </div>
+                <div class="stream-pulse">
+                    <span class="pulse-dot"></span> LIVE FEED
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="alert-table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Classification</th>
+                            <th>Source IP : Port</th>
+                            <th>Destination IP : Port</th>
+                            <th>Protocol</th>
+                            <th>Packets</th>
+                            <th>Confidence</th>
+                        </tr>
+                    </thead>
+                    <tbody id="alertTableBody">
+                        <tr>
+                            <td colspan="7" class="empty-row">No active packet alerts captured yet. Click "Start Tracking" to begin monitoring.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- SCRIPT FOR REAL-TIME POLLING & CONTROLS -->
+    <script>
+        let isPolling = true;
+
+        document.getElementById('captureMode').addEventListener('change', function(e) {
+            if (e.target.value === 'pcap') {
+                document.getElementById('ifaceGroup').classList.add('hidden');
+                document.getElementById('pcapGroup').classList.remove('hidden');
+            } else {
+                document.getElementById('ifaceGroup').classList.remove('hidden');
+                document.getElementById('pcapGroup').classList.add('hidden');
+            }
+        });
+
+        async function fetchInterfaces() {
+            try {
+                const res = await fetch('/api/v2/interfaces');
+                const data = await res.json();
+                const select = document.getElementById('interfaceSelect');
+                select.innerHTML = '';
+                data.interfaces.forEach(iface => {
+                    const opt = document.createElement('option');
+                    opt.value = iface.name;
+                    opt.textContent = `${iface.description} (${iface.name})`;
+                    select.appendChild(opt);
+                });
+            } catch (err) {
+                console.error("Error fetching interfaces:", err);
+            }
+        }
+
+        async function updateDashboard() {
+            try {
+                const res = await fetch('/api/v2/alerts?limit=50');
+                const data = await res.json();
+                const status = data.status;
+                const stats = status.stats;
+
+                // Update KPI values
+                document.getElementById('kpiPackets').textContent = (stats.packets_processed || 0).toLocaleString();
+                document.getElementById('kpiActiveFlows').textContent = (stats.active_flows || 0).toLocaleString();
+                document.getElementById('kpiBenign').textContent = (stats.benign_count || 0).toLocaleString();
+                document.getElementById('kpiAttacks').textContent = (stats.attack_count || 0).toLocaleString();
+
+                // Threat Level Badge
+                const threatBadge = document.getElementById('threatLevelBadge');
+                const threatLevel = stats.threat_level || "LOW";
+                threatBadge.textContent = threatLevel;
+                threatBadge.className = `threat-badge threat-${threatLevel.toLowerCase()}`;
+
+                // Status Banner
+                const dot = document.getElementById('statusIndicatorDot');
+                const bannerText = document.getElementById('statusBannerText');
+                const btnStart = document.getElementById('btnStart');
+                const btnStop = document.getElementById('btnStop');
+
+                if (status.is_running) {
+                    dot.className = "status-dot online pulsing";
+                    bannerText.textContent = `Active Sniffer (${status.mode.toUpperCase()}) running on ${status.active_interface}`;
+                    btnStart.disabled = true;
+                    btnStart.classList.add('disabled');
+                    btnStop.disabled = false;
+                    btnStop.classList.remove('disabled');
+                } else {
+                    dot.className = "status-dot offline";
+                    if (status.error_message) {
+                        bannerText.textContent = `Engine Stopped (Notice: ${status.error_message})`;
+                    } else {
+                        bannerText.textContent = `Engine Idle - Click "Start Tracking" or "Simulate Attack Traffic"`;
+                    }
+                    btnStart.disabled = false;
+                    btnStart.classList.remove('disabled');
+                    btnStop.disabled = true;
+                    btnStop.classList.add('disabled');
+                }
+
+                // Render Table
+                const tbody = document.getElementById('alertTableBody');
+                if (data.alerts && data.alerts.length > 0) {
+                    tbody.innerHTML = '';
+                    data.alerts.forEach(alert => {
+                        const tr = document.createElement('tr');
+                        tr.className = alert.label === 'ATTACK' ? 'row-attack' : 'row-benign';
+
+                        const labelBadge = alert.label === 'ATTACK' 
+                            ? `<span class="badge-attack">🚨 ATTACK</span>`
+                            : `<span class="badge-benign">✓ BENIGN</span>`;
+
+                        tr.innerHTML = `
+                            <td>${alert.timestamp}</td>
+                            <td>${labelBadge}</td>
+                            <td><code>${alert.src_ip}:${alert.src_port}</code></td>
+                            <td><code>${alert.dst_ip}:${alert.dst_port}</code></td>
+                            <td><span class="protocol-tag">${alert.protocol}</span></td>
+                            <td>${alert.packets}</td>
+                            <td><strong>${alert.confidence}%</strong></td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+            } catch (err) {
+                console.error("Error updating V2 dashboard:", err);
+            }
+        }
+
+        async function startSniffer() {
+            const mode = document.getElementById('captureMode').value;
+            const interfaceVal = document.getElementById('interfaceSelect').value;
+            const pcapPath = document.getElementById('pcapPathInput').value;
+
+            const res = await fetch('/api/v2/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    mode: mode,
+                    interface: interfaceVal,
+                    pcap_path: pcapPath
+                })
+            });
+            const data = await res.json();
+            if (!data.success) {
+                alert(data.message);
+            }
+            updateDashboard();
+        }
+
+        async function stopSniffer() {
+            await fetch('/api/v2/stop', { method: 'POST' });
+            updateDashboard();
+        }
+
+        async function triggerSimulation() {
+            const res = await fetch('/api/v2/simulate-attack', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ packet_count: 500 })
+            });
+            const data = await res.json();
+            alert(data.message);
+
+            // Auto-start PCAP / Live if idle so user immediately sees simulation
+            const statusRes = await fetch('/api/v2/status');
+            const status = await statusRes.json();
+            if (!status.is_running) {
+                startSniffer();
+            }
+        }
+
+        async function clearAlerts() {
+            await fetch('/api/v2/clear', { method: 'POST' });
+            updateDashboard();
+        }
+
+        // Initialize
+        fetchInterfaces();
+        updateDashboard();
+        setInterval(updateDashboard, 1500);
+    </script>
+</body>
+</html>

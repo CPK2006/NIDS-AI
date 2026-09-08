@@ -1,11 +1,16 @@
 import pandas as pd
 import numpy as np
+import os
+import json
+
 from catboost import CatBoostClassifier
+
 from sklearn.metrics import (
     accuracy_score,
     precision_score,
     recall_score,
     f1_score,
+    roc_auc_score,
     confusion_matrix
 )
 
@@ -18,36 +23,38 @@ print("=" * 70)
 # --------------------------------------------------
 
 DATA_PATH = "data/sample/cicids2017_binary_deduplicated.csv"
+FEATURE_PATH = "data/features/selected_features.csv"
 MODEL_PATH = "results/models/sequential_catboost_model.cbm"
 
 OUTPUT_CSV = "results/models/sequential_threshold_analysis.csv"
+OUTPUT_JSON = "results/models/best_sequential_threshold.json"
 
 # --------------------------------------------------
-# Load dataset
+# Load data
 # --------------------------------------------------
 
 print("\nLoading dataset...")
 
 df = pd.read_csv(DATA_PATH)
 
-print("Dataset shape:", df.shape)
+selected_features = pd.read_csv(
+    FEATURE_PATH
+)["Feature"].tolist()
 
-# --------------------------------------------------
-# Features and target
-# --------------------------------------------------
-
-X = df.drop(columns=["Binary_Label"])
+X = df[selected_features]
 y = df["Binary_Label"]
 
-# Same sequential split used during training
+# --------------------------------------------------
+# Sequential split
+# --------------------------------------------------
+
 split_index = int(len(df) * 0.80)
 
 X_test = X.iloc[split_index:]
 y_test = y.iloc[split_index:]
 
-print("\nSequential test shape:")
-print("X_test:", X_test.shape)
-print("y_test:", y_test.shape)
+print("Test shape:", X_test.shape)
+print("Number of features:", len(selected_features))
 
 # --------------------------------------------------
 # Load model
@@ -67,74 +74,54 @@ print("Model loaded successfully.")
 
 print("\nGenerating attack probabilities...")
 
-y_probability = model.predict_proba(X_test)[:, 1]
+y_prob = model.predict_proba(X_test)[:, 1]
+
+print("Probabilities generated.")
 
 # --------------------------------------------------
 # Threshold analysis
 # --------------------------------------------------
 
-thresholds = [
-    0.10,
-    0.15,
-    0.20,
-    0.25,
-    0.30,
-    0.35,
-    0.40,
-    0.45,
-    0.50,
-    0.55,
-    0.60,
-    0.65,
-    0.70,
-    0.75,
-    0.80,
-    0.85,
-    0.90,
-    0.95
-]
+print("\n" + "=" * 70)
+print("THRESHOLD ANALYSIS")
+print("=" * 70)
+
+thresholds = np.arange(
+    0.05,
+    1.00,
+    0.05
+)
 
 results = []
 
-print("\n" + "=" * 70)
-print("THRESHOLD PERFORMANCE")
-print("=" * 70)
-
-print(
-    f"{'Threshold':<10}"
-    f"{'Accuracy':<12}"
-    f"{'Precision':<12}"
-    f"{'Recall':<12}"
-    f"{'F1':<12}"
-    f"{'FPR':<12}"
-    f"{'FNR':<12}"
-    f"{'FP':<10}"
-    f"{'FN':<10}"
-)
-
-print("-" * 100)
-
 for threshold in thresholds:
 
-    y_pred = (y_probability >= threshold).astype(int)
+    y_pred = (
+        y_prob >= threshold
+    ).astype(int)
 
     tn, fp, fn, tp = confusion_matrix(
         y_test,
-        y_pred,
-        labels=[0, 1]
+        y_pred
     ).ravel()
 
-    accuracy = accuracy_score(y_test, y_pred)
+    accuracy = accuracy_score(
+        y_test,
+        y_pred
+    )
+
     precision = precision_score(
         y_test,
         y_pred,
         zero_division=0
     )
+
     recall = recall_score(
         y_test,
         y_pred,
         zero_division=0
     )
+
     f1 = f1_score(
         y_test,
         y_pred,
@@ -142,100 +129,181 @@ for threshold in thresholds:
     )
 
     fpr = fp / (fp + tn)
+
     fnr = fn / (fn + tp)
 
+    total_errors = fp + fn
+
     results.append({
-        "Threshold": threshold,
-        "Accuracy": accuracy,
-        "Precision": precision,
-        "Recall": recall,
-        "F1": f1,
-        "FPR": fpr,
-        "FNR": fnr,
-        "TN": tn,
-        "FP": fp,
-        "FN": fn,
-        "TP": tp
+        "threshold": round(float(threshold), 2),
+        "accuracy": accuracy,
+        "precision": precision,
+        "recall": recall,
+        "f1_score": f1,
+        "false_positive_rate": fpr,
+        "false_negative_rate": fnr,
+        "tn": int(tn),
+        "fp": int(fp),
+        "fn": int(fn),
+        "tp": int(tp),
+        "total_errors": int(total_errors)
     })
 
-    print(
-        f"{threshold:<10.2f}"
-        f"{accuracy:<12.6f}"
-        f"{precision:<12.6f}"
-        f"{recall:<12.6f}"
-        f"{f1:<12.6f}"
-        f"{fpr:<12.6f}"
-        f"{fnr:<12.6f}"
-        f"{fp:<10}"
-        f"{fn:<10}"
-    )
-
-# --------------------------------------------------
-# DataFrame
-# --------------------------------------------------
-
 results_df = pd.DataFrame(results)
+
+# --------------------------------------------------
+# Display results
+# --------------------------------------------------
+
+print("\n")
+print(
+    results_df[
+        [
+            "threshold",
+            "accuracy",
+            "precision",
+            "recall",
+            "f1_score",
+            "false_positive_rate",
+            "false_negative_rate",
+            "total_errors"
+        ]
+    ].to_string(index=False)
+)
 
 # --------------------------------------------------
 # Best thresholds
 # --------------------------------------------------
 
 best_f1 = results_df.loc[
-    results_df["F1"].idxmax()
+    results_df["f1_score"].idxmax()
 ]
 
 best_recall = results_df.loc[
-    results_df["Recall"].idxmax()
+    results_df["recall"].idxmax()
 ]
 
 best_accuracy = results_df.loc[
-    results_df["Accuracy"].idxmax()
+    results_df["accuracy"].idxmax()
 ]
 
-# Best threshold with FPR <= 0.001
-low_fpr = results_df[
-    results_df["FPR"] <= 0.001
-]
+# --------------------------------------------------
+# NIDS-oriented threshold
+# --------------------------------------------------
+# We want at least 99% attack recall
+# while minimizing false positives.
 
-if len(low_fpr) > 0:
-    best_low_fpr = low_fpr.loc[
-        low_fpr["Recall"].idxmax()
+high_recall = results_df[
+    results_df["recall"] >= 0.99
+].copy()
+
+if len(high_recall) > 0:
+
+    best_nids = high_recall.loc[
+        high_recall["false_positive_rate"].idxmin()
     ]
+
 else:
-    best_low_fpr = None
+
+    best_nids = best_recall
 
 # --------------------------------------------------
-# Display
+# Print best thresholds
 # --------------------------------------------------
 
 print("\n" + "=" * 70)
-print("BEST THRESHOLD BY F1")
+print("BEST THRESHOLDS")
 print("=" * 70)
 
-print(best_f1)
+print(
+    f"\nBest F1 threshold: "
+    f"{best_f1['threshold']:.2f}"
+)
 
-print("\n" + "=" * 70)
-print("BEST THRESHOLD BY RECALL")
-print("=" * 70)
+print(
+    f"F1-score: "
+    f"{best_f1['f1_score']:.6f}"
+)
 
-print(best_recall)
+print(
+    f"Recall: "
+    f"{best_f1['recall']:.6f}"
+)
 
-print("\n" + "=" * 70)
-print("BEST THRESHOLD BY ACCURACY")
-print("=" * 70)
+print(
+    f"Precision: "
+    f"{best_f1['precision']:.6f}"
+)
 
-print(best_accuracy)
+print(
+    f"\nBest accuracy threshold: "
+    f"{best_accuracy['threshold']:.2f}"
+)
 
-if best_low_fpr is not None:
+print(
+    f"Accuracy: "
+    f"{best_accuracy['accuracy']:.6f}"
+)
 
-    print("\n" + "=" * 70)
-    print("BEST RECALL WITH FPR <= 0.1%")
-    print("=" * 70)
+print(
+    f"\nBest recall threshold: "
+    f"{best_recall['threshold']:.2f}"
+)
 
-    print(best_low_fpr)
+print(
+    f"Recall: "
+    f"{best_recall['recall']:.6f}"
+)
+
+print("\n" + "-" * 70)
+
+print(
+    f"\nNIDS-oriented threshold: "
+    f"{best_nids['threshold']:.2f}"
+)
+
+print(
+    f"Accuracy          : "
+    f"{best_nids['accuracy']:.6f}"
+)
+
+print(
+    f"Precision         : "
+    f"{best_nids['precision']:.6f}"
+)
+
+print(
+    f"Recall            : "
+    f"{best_nids['recall']:.6f}"
+)
+
+print(
+    f"F1-score          : "
+    f"{best_nids['f1_score']:.6f}"
+)
+
+print(
+    f"False Positive Rate: "
+    f"{best_nids['false_positive_rate']:.6f}"
+)
+
+print(
+    f"False Negative Rate: "
+    f"{best_nids['false_negative_rate']:.6f}"
+)
+
+print(
+    f"False Positives   : "
+    f"{int(best_nids['fp'])}"
+)
+
+print(
+    f"False Negatives   : "
+    f"{int(best_nids['fn'])}"
+)
 
 # --------------------------------------------------
-# Save
+# Save CSV
 # --------------------------------------------------
 
 results_df.to_csv(
@@ -243,9 +311,51 @@ results_df.to_csv(
     index=False
 )
 
-print("\nSaved:")
-print(OUTPUT_CSV)
+# --------------------------------------------------
+# Save best threshold
+# --------------------------------------------------
+
+best_result = {
+    "threshold": float(best_nids["threshold"]),
+    "accuracy": float(best_nids["accuracy"]),
+    "precision": float(best_nids["precision"]),
+    "recall": float(best_nids["recall"]),
+    "f1_score": float(best_nids["f1_score"]),
+    "false_positive_rate": float(
+        best_nids["false_positive_rate"]
+    ),
+    "false_negative_rate": float(
+        best_nids["false_negative_rate"]
+    ),
+    "true_negatives": int(best_nids["tn"]),
+    "false_positives": int(best_nids["fp"]),
+    "false_negatives": int(best_nids["fn"]),
+    "true_positives": int(best_nids["tp"]),
+    "total_errors": int(best_nids["total_errors"])
+}
+
+with open(
+    OUTPUT_JSON,
+    "w"
+) as f:
+
+    json.dump(
+        best_result,
+        f,
+        indent=4
+    )
+
+# --------------------------------------------------
+# Final output
+# --------------------------------------------------
 
 print("\n" + "=" * 70)
-print("SEQUENTIAL THRESHOLD ANALYSIS COMPLETED")
+print("FILES SAVED")
+print("=" * 70)
+
+print(OUTPUT_CSV)
+print(OUTPUT_JSON)
+
+print("\n" + "=" * 70)
+print("THRESHOLD ANALYSIS COMPLETED")
 print("=" * 70)

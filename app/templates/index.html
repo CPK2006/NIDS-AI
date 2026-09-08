@@ -2,282 +2,278 @@
 <html lang="en">
 
 <head>
-
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>CICIDS2017 NIDS</title>
-
+    <title>CICIDS2017 NIDS - V1 Static Detection</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-
+    <link rel="stylesheet" href="{{ url_for('static', filename='v2_style.css') }}">
 </head>
 
-<body>
+<body class="v2-theme">
+
+    <!-- ================================================= -->
+    <!-- TOP NAVIGATION BAR -->
+    <!-- ================================================= -->
+    <nav class="nav-bar v2-nav">
+        <div class="nav-brand">
+            <span class="shield-icon">🛡️</span>
+            <strong>NIDS-AI System</strong>
+        </div>
+        <div class="nav-links">
+            <a href="/" class="nav-link active">V1: Static Detection</a>
+            <a href="/v2" class="nav-link highlight">V2: Real-Time Dynamic Tracking ⚡</a>
+            <a href="/presentation" class="nav-link">Presentation Deck 📊</a>
+        </div>
+    </nav>
 
     <div class="container">
 
         <!-- ================================================= -->
         <!-- HEADER -->
         <!-- ================================================= -->
-
-        <header>
-
-            <div class="badge">
-                NETWORK INTRUSION DETECTION SYSTEM
+        <header class="v2-header">
+            <div class="header-main">
+                <div>
+                    <div class="v2-badge">STATIC TABULAR DETECTOR (V1)</div>
+                    <h1>CICIDS2017 <span>Static Intrusion Detector</span></h1>
+                    <p class="subtitle">Leakage-Free Top-20 LightGBM Production Model for Manual Flow Inspection</p>
+                </div>
+                <div class="action-buttons">
+                    <button type="button" class="btn-preset btn-large-preset" onclick="fillBenignPreset(true)">
+                        ✓ Test Sample BENIGN
+                    </button>
+                    <button type="button" class="btn-preset btn-preset-attack btn-large-preset" onclick="fillAttackPreset(true)">
+                        🚨 Test Sample ATTACK
+                    </button>
+                </div>
             </div>
-
-            <h1>
-                CICIDS2017
-                <span>NIDS</span>
-            </h1>
-
-            <p class="subtitle">
-                Leakage-Free Top-20 CatBoost Intrusion Detection
-            </p>
 
             <div class="model-info">
-
                 <div>
-                    <strong>Model</strong>
-                    <span>CatBoost</span>
+                    <strong>Model Architecture</strong>
+                    <span>LightGBM</span>
                 </div>
-
                 <div>
-                    <strong>Features</strong>
+                    <strong>Top Features</strong>
                     <span>20</span>
                 </div>
-
                 <div>
-                    <strong>Threshold</strong>
+                    <strong>Decision Threshold</strong>
                     <span>{{ threshold }}</span>
                 </div>
-
                 <div>
-                    <strong>ROC-AUC</strong>
-                    <span>99.8995%</span>
+                    <strong>ROC-AUC Metric</strong>
+                    <span>99.9946%</span>
                 </div>
-
             </div>
-
         </header>
 
-
         <!-- ================================================= -->
-        <!-- MODEL STATUS -->
+        <!-- MODEL STATUS BAR -->
         <!-- ================================================= -->
-
         <div class="status">
-
             {% if model_loaded %}
-
             <span class="status-dot online"></span>
-
-            <span>
-                Detection model loaded and ready
-            </span>
-
+            <span>CatBoost V1 Detection Model loaded & operational — Click sample buttons above or enter custom features below</span>
             {% else %}
-
             <span class="status-dot offline"></span>
-
-            <span>
-                Model could not be loaded
-            </span>
-
+            <span>Model loading error - check log outputs</span>
             {% endif %}
-
         </div>
 
-
         <!-- ================================================= -->
-        <!-- PREDICTION RESULT -->
+        <!-- PREDICTION RESULT CARD -->
         <!-- ================================================= -->
-
         {% if prediction %}
-        
         <div class="result-card {% if prediction == 'ATTACK' %}attack{% else %}benign{% endif %}">
-        
-            <div class="result-label">
-                DETECTION RESULT
-            </div>
-        
+            <div class="result-label">STATIC CLASSIFICATION RESULT</div>
             <div class="result">
                 {% if prediction == "ATTACK" %}
-                ⚠ ATTACK DETECTED
+                🚨 ATTACK DETECTED
                 {% else %}
                 ✓ BENIGN TRAFFIC
                 {% endif %}
             </div>
-        
+
             <div class="result-details">
-        
                 <div>
                     <span>Attack Probability</span>
                     <strong>{{ "%.4f"|format(probability) }}%</strong>
                 </div>
-        
                 <div>
-                    <span>Confidence</span>
+                    <span>Model Confidence</span>
                     <strong>{{ "%.4f"|format(confidence) }}%</strong>
                 </div>
-        
                 <div>
-                    <span>Decision Threshold</span>
+                    <span>Applied Threshold</span>
                     <strong>{{ threshold }}</strong>
                 </div>
-        
             </div>
-        
         </div>
-        
         {% endif %}
 
-
         <!-- ================================================= -->
-        <!-- ERROR -->
+        <!-- ERROR BOX -->
         <!-- ================================================= -->
-
         {% if error %}
-
         <div class="error">
-
-            <strong>Prediction Error</strong>
-
-            <p>{{ error }}</p>
-
+            <strong>Input Error:</strong> {{ error }}
         </div>
-
         {% endif %}
 
-
         <!-- ================================================= -->
-        <!-- INPUT FORM -->
+        <!-- INPUT FORM PANEL -->
         <!-- ================================================= -->
-
         <section class="panel">
-
             <div class="section-title">
-
                 <div>
                     <span class="section-number">01</span>
-                    Network Flow Features
+                    Network Flow Feature Inputs
                 </div>
-
-                <span class="feature-count">
-                    20 FEATURES
-                </span>
-
+                <div class="preset-buttons">
+                    <button type="button" class="btn-preset" onclick="fillBenignPreset(false)">
+                        ✓ Fill Sample Benign
+                    </button>
+                    <button type="button" class="btn-preset btn-preset-attack" onclick="fillAttackPreset(false)">
+                        🚨 Fill Sample Attack
+                    </button>
+                </div>
             </div>
 
-
-            <form method="POST">
-
+            <form method="POST" id="v1DetectionForm">
                 <div class="feature-grid">
-
                     {% for feature in features %}
-
                     <div class="input-group">
-
-                        <label for="{{ feature }}">
-                            {{ feature }}
-                        </label>
-
+                        <label for="{{ feature }}">{{ feature }}</label>
                         <input type="number" step="any" id="{{ feature }}" name="{{ feature }}"
-                            value="{{ values[feature] }}" placeholder="Enter value" required>
-
+                            value="{{ values[feature] }}" placeholder="Enter numeric value" required>
                     </div>
-
                     {% endfor %}
-
                 </div>
 
-
-                <button type="submit">
-
+                <button type="submit" id="btnSubmit">
                     <span>RUN INTRUSION DETECTION</span>
-
                     <span class="arrow">→</span>
-
                 </button>
-
             </form>
-
         </section>
 
-
         <!-- ================================================= -->
-        <!-- MODEL PERFORMANCE -->
+        <!-- MODEL PERFORMANCE METRICS -->
         <!-- ================================================= -->
-
         <section class="performance">
-
             <div class="section-title">
-
                 <div>
                     <span class="section-number">02</span>
-                    Model Performance
+                    Model Evaluation Performance
                 </div>
-
             </div>
 
             <div class="metrics">
-
                 <div class="metric">
-
                     <span>Accuracy</span>
-
                     <strong>99.0133%</strong>
-
                 </div>
-
                 <div class="metric">
-
                     <span>Precision</span>
-
                     <strong>99.0981%</strong>
-
                 </div>
-
                 <div class="metric">
-
                     <span>Recall</span>
-
                     <strong>97.9154%</strong>
-
                 </div>
-
                 <div class="metric">
-
                     <span>F1 Score</span>
-
                     <strong>98.5032%</strong>
-
                 </div>
-
             </div>
-
         </section>
-
 
         <!-- ================================================= -->
         <!-- FOOTER -->
         <!-- ================================================= -->
-
         <footer>
-
-            <p>
-                CICIDS2017 Network Intrusion Detection System
-            </p>
-
-            <p>
-                Leakage-Free Top-20 CatBoost Model
-            </p>
-
+            <p>CICIDS2017 Network Intrusion Detection System — Leakage-Free CatBoost Top-20 Model</p>
         </footer>
 
     </div>
 
+    <!-- PRESET SAMPLE SCRIPT -->
+    <script>
+        const benignPreset = {
+            "Destination Port": 80,
+            "Bwd Packet Length Std": 15.0,
+            "Init_Win_bytes_forward": 8192,
+            "Init_Win_bytes_backward": 8192,
+            "Fwd Header Length": 40,
+            "Average Packet Size": 50.0,
+            "min_seg_size_forward": 20,
+            "Flow IAT Mean": 10.0,
+            "Bwd Header Length": 40,
+            "PSH Flag Count": 0,
+            "Flow IAT Min": 5.0,
+            "Fwd Packet Length Max": 100,
+            "Fwd IAT Min": 5.0,
+            "Total Length of Bwd Packets": 500,
+            "Max Packet Length": 100,
+            "Fwd IAT Total": 50.0,
+            "Packet Length Std": 10.0,
+            "Flow Bytes/s": 1000.0,
+            "Bwd Packet Length Mean": 20.0,
+            "Packet Length Variance": 100.0
+        };
+
+        const attackPreset = {
+            "Destination Port": 8080.0,
+            "Bwd Packet Length Std": 85.33,
+            "Init_Win_bytes_forward": 29200.0,
+            "Init_Win_bytes_backward": 110.0,
+            "Fwd Header Length": 296.0,
+            "Average Packet Size": 32.11,
+            "min_seg_size_forward": 32.0,
+            "Flow IAT Mean": 3541331.76,
+            "Bwd Header Length": 296.0,
+            "PSH Flag Count": 1.0,
+            "Flow IAT Min": 47.0,
+            "Fwd Packet Length Max": 322.0,
+            "Fwd IAT Min": 234.0,
+            "Total Length of Bwd Packets": 256.0,
+            "Max Packet Length": 322.0,
+            "Fwd IAT Total": 51200000.0,
+            "Packet Length Std": 91.78,
+            "Flow Bytes/s": 9.60,
+            "Bwd Packet Length Mean": 28.44,
+            "Packet Length Variance": 8424.25
+        };
+
+        function fillBenignPreset(autoSubmit = false) {
+            for (let [key, val] of Object.entries(benignPreset)) {
+                let el = document.getElementById(key);
+                if (el) el.value = val;
+            }
+            if (autoSubmit) {
+                document.getElementById('v1DetectionForm').submit();
+            }
+        }
+
+        function fillAttackPreset(autoSubmit = false) {
+            for (let [key, val] of Object.entries(attackPreset)) {
+                let el = document.getElementById(key);
+                if (el) el.value = val;
+            }
+            if (autoSubmit) {
+                document.getElementById('v1DetectionForm').submit();
+            }
+        }
+
+        // Auto-fill Benign sample if form fields are empty on initial visit
+        window.addEventListener('DOMContentLoaded', () => {
+            let firstInput = document.querySelector('.feature-grid input');
+            if (firstInput && (!firstInput.value || firstInput.value === '')) {
+                fillBenignPreset(false);
+            }
+        });
+    </script>
 </body>
 
 </html>
