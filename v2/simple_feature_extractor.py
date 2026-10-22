@@ -158,7 +158,8 @@ def update_flow(flow, info, direction):
 
 def generate_features(flow):
 
-    duration = flow.last_time - flow.start_time
+    duration_seconds = max(0.000001, flow.last_time - flow.start_time)
+    duration_microseconds = duration_seconds * 1_000_000.0
 
     total_packets = (
         flow.fwd_packets +
@@ -194,16 +195,11 @@ def generate_features(flow):
     else:
         fwd_packet_length_max = 0.0
 
-    if duration > 0:
-        flow_bytes_per_second = (
-            total_bytes / duration
-        )
-    else:
-        flow_bytes_per_second = 0.0
+    flow_bytes_per_second = total_bytes / duration_seconds
 
     return [
         flow.dst_port,
-        duration,
+        duration_microseconds,
         flow.fwd_packets,
         flow.bwd_packets,
         flow.fwd_bytes,

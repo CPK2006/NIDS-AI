@@ -1,0 +1,3 @@
+# Full pinned local/development stack plus Scapy for Windows sensor capture.
+-r requirements.txt
+scapy==2.7.0
