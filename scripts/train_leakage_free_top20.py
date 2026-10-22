@@ -26,7 +26,7 @@ DATA_PATH = "data/sample/cicids2017_binary_deduplicated.csv"
 
 MODEL_OUTPUT = (
     "results/models/"
-    "leakage_free_top20_catboost_model.cbm"
+    "leakage_free_top20_model.cbm"
 )
 
 RESULT_OUTPUT = (

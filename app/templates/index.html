@@ -151,7 +151,7 @@
                     {% endfor %}
                 </div>
 
-                <button type="submit" id="btnSubmit">
+                <button type="submit" id="btnSubmit" aria-busy="false">
                     <span>RUN INTRUSION DETECTION</span>
                     <span class="arrow">→</span>
                 </button>
@@ -272,6 +272,12 @@
             if (firstInput && (!firstInput.value || firstInput.value === '')) {
                 fillBenignPreset(false);
             }
+
+            document.getElementById('v1DetectionForm').addEventListener('submit', () => {
+                const submitButton = document.getElementById('btnSubmit');
+                submitButton.setAttribute('aria-busy', 'true');
+                submitButton.querySelector('span').textContent = 'ANALYZING FLOW...';
+            });
         });
     </script>
 </body>

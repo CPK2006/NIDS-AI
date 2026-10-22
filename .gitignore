@@ -66,3 +66,5 @@ catboost_info/
 *.cap
 data/pcap/*
 !data/pcap/.gitkeep
+/data/netra_email_alerts.sqlite3
+/data/netra_events.sqlite3

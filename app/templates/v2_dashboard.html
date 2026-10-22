@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NIDS-AI V2 - Dynamic Real-Time Intrusion Tracker</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='v2_style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='v2_style.css') }}?v=5">
 </head>
 <body class="v2-theme">
 
@@ -46,7 +46,7 @@
             <!-- CONTROLS BAR -->
             <div class="controls-panel">
                 <div class="control-group">
-                    <label>Sniffer Mode / Source</label>
+                    <label>Capture mode for next run</label>
                     <select id="captureMode">
                         <option value="live">Live Network Sniffing</option>
                         <option value="pcap">PCAP File Replay Simulation</option>
@@ -85,6 +85,13 @@
                 <span id="statusIndicatorDot" class="status-dot offline"></span>
                 <span id="statusBannerText">Engine Idle - Ready to start network capture</span>
             </div>
+            <div class="health-strip" id="healthStrip" aria-live="polite">
+                <span id="healthModel">Model status: loading</span>
+                <span id="healthPacket">Last packet: none</span>
+                <span id="healthInference">Last inference: none</span>
+                <span id="healthErrors">Processing errors: 0 · Capture errors: 0</span>
+                <span id="healthEmailAlerts">Email alerts: loading</span>
+            </div>
         </header>
 
         <!-- ================================================= -->
@@ -102,6 +109,11 @@
                 <div id="kpiActiveFlows" class="kpi-value">0</div>
                 <div class="kpi-sub">Rolling Window Buffer</div>
             </div>
+            <div class="kpi-card">
+                <div class="kpi-title">Flows Classified</div>
+                <div id="kpiCompletedFlows" class="kpi-value">0</div>
+                <div class="kpi-sub">Successful live/replay predictions</div>
+            </div>
 
             <div class="kpi-card benign-card">
                 <div class="kpi-title">Benign Flows</div>
@@ -112,7 +124,17 @@
             <div class="kpi-card attack-card">
                 <div class="kpi-title">Attacks Flagged</div>
                 <div id="kpiAttacks" class="kpi-value">0</div>
-                <div class="kpi-sub">Intrusion Alerts Raised</div>
+                <div class="kpi-sub">Classified attacks, including simulations</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">Attack Rate</div>
+                <div id="kpiAttackRate" class="kpi-value">0.0%</div>
+                <div class="kpi-sub">Of all classified flows, including simulations</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">Recent Alerts</div>
+                <div id="kpiRecentAlerts" class="kpi-value">0</div>
+                <div class="kpi-sub">Alert occurrences, including simulations</div>
             </div>
         </section>
 
@@ -122,11 +144,11 @@
         <section class="alert-section">
             <div class="section-header">
                 <div>
-                    <h2>Live Intrusion Alerts Stream</h2>
-                    <p>Dynamic flow classification feed updated in real time</p>
+                    <h2>Live Feed</h2>
+                    <p>Recent ML classifications from captured and replayed traffic</p>
                 </div>
                 <div class="stream-pulse">
-                    <span class="pulse-dot"></span> LIVE FEED
+                    LIVE FEED
                 </div>
             </div>
 
@@ -134,8 +156,12 @@
                 <table class="alert-table">
                     <thead>
                         <tr>
-                            <th>Time</th>
+                            <th>First seen</th>
                             <th>Classification</th>
+                            <th>Detector</th>
+                            <th>Traffic origin</th>
+                            <th>Occurrences</th>
+                            <th>Last seen</th>
                             <th>Source IP : Port</th>
                             <th>Destination IP : Port</th>
                             <th>Protocol</th>
@@ -145,11 +171,41 @@
                     </thead>
                     <tbody id="alertTableBody">
                         <tr>
-                            <td colspan="7" class="empty-row">No active packet alerts captured yet. Click "Start Tracking" to begin monitoring.</td>
+                            <td colspan="11" class="empty-row">No flow classifications recorded yet.</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
+        </section>
+
+        <section class="history-grid" aria-label="Historical traffic analytics">
+            <section class="history-panel">
+                <div class="history-heading">
+                    <div><h2>Historical Traffic Trends</h2><p>Stored flow classifications and operational events · UTC</p></div>
+                    <div class="history-filters">
+                        <label for="historyWindow">Window</label>
+                        <select id="historyWindow">
+                            <option value="1h">Last hour</option><option value="6h">Last 6 hours</option>
+                            <option value="24h" selected>Last 24 hours</option><option value="7d">Last 7 days</option>
+                            <option value="30d">Last 30 days</option>
+                        </select>
+                        <label for="historyOrigin">Origin</label>
+                        <select id="historyOrigin">
+                            <option value="live" selected>Live capture</option><option value="pcap">PCAP replay</option>
+                            <option value="simulation">Simulation</option><option value="all">All origins</option>
+                        </select>
+                    </div>
+                </div>
+                <p id="historyStatus" class="history-status" aria-live="polite">Loading stored history…</p>
+                <div id="trendChart" class="trend-chart" role="list" aria-label="Traffic and event buckets"></div>
+                <div class="trend-legend"><span>Benign flows</span><span>Attack flows</span><span>Other events</span></div>
+            </section>
+            <section class="history-panel talkers-panel">
+                <div class="history-heading"><div><h2>Top Talkers</h2><p>Ranked network endpoints</p></div></div>
+                <div id="talkersStatus" class="unavailable-state" aria-live="polite">
+                    Top Talkers are unavailable because stored events do not contain IP addresses or ports.
+                </div>
+            </section>
         </section>
 
     </div>
@@ -157,6 +213,69 @@
     <!-- SCRIPT FOR REAL-TIME POLLING & CONTROLS -->
     <script>
         let isPolling = true;
+        let dashboardRequestInFlight = false;
+        let historyRequestInFlight = false;
+
+        async function updateHistory() {
+            if (historyRequestInFlight) return;
+            historyRequestInFlight = true;
+            const windowValue = document.getElementById('historyWindow').value;
+            const originValue = document.getElementById('historyOrigin').value;
+            const query = new URLSearchParams({ window: windowValue, origin: originValue });
+            try {
+                const [trendResponse, talkerResponse] = await Promise.all([
+                    fetch(`/api/v2/history/trends?${query}`, { cache: 'no-store' }),
+                    fetch(`/api/v2/history/top-talkers?${query}`, { cache: 'no-store' })
+                ]);
+                if (!trendResponse.ok || !talkerResponse.ok) throw new Error(`HTTP ${!trendResponse.ok ? trendResponse.status : talkerResponse.status}`);
+                const trends = await trendResponse.json();
+                const talkers = await talkerResponse.json();
+                if (!Array.isArray(trends.buckets) || talkers.available !== false) throw new Error('Invalid history response');
+                const chart = document.getElementById('trendChart');
+                chart.replaceChildren();
+                const maximum = Math.max(1, ...trends.buckets.map(bucket => bucket.flow_count + bucket.alert_count + bucket.capture_error_count + bucket.processing_error_count));
+                trends.buckets.forEach(bucket => {
+                    const row = document.createElement('div');
+                    row.className = 'trend-row';
+                    row.setAttribute('role', 'listitem');
+                    const label = document.createElement('time');
+                    label.textContent = new Date(bucket.bucket_start_utc).toLocaleString();
+                    const bar = document.createElement('div');
+                    bar.className = 'trend-bar';
+                    const segments = [
+                        ['trend-benign', bucket.benign_count], ['trend-attack', bucket.attack_count],
+                        ['trend-other', bucket.alert_count + bucket.capture_error_count + bucket.processing_error_count]
+                    ];
+                    segments.forEach(([className, count]) => {
+                        if (!count) return;
+                        const segment = document.createElement('span');
+                        segment.className = className;
+                        segment.style.width = `${Math.max(1, count / maximum * 100)}%`;
+                        segment.title = `${count}`;
+                        bar.appendChild(segment);
+                    });
+                    const summary = document.createElement('span');
+                    summary.className = 'trend-summary';
+                    summary.textContent = `${bucket.flow_count} flows · ${bucket.packet_count.toLocaleString()} packets`;
+                    row.append(label, bar, summary);
+                    chart.appendChild(row);
+                });
+                document.getElementById('historyStatus').textContent = trends.buckets.length
+                    ? `Showing ${trends.origin_filter} origin · ${trends.window} · ${trends.buckets.length} non-empty UTC buckets`
+                    : `No stored events for ${trends.origin_filter} origin in this period.`;
+                document.getElementById('talkersStatus').textContent = talkers.reason;
+            } catch (err) {
+                document.getElementById('historyStatus').textContent = 'Historical trend query failed. Data is unavailable; retrying.';
+                document.getElementById('trendChart').replaceChildren();
+                document.getElementById('talkersStatus').textContent = 'Top Talkers data is unavailable.';
+            } finally {
+                historyRequestInFlight = false;
+            }
+        }
+
+        document.getElementById('historyWindow').addEventListener('change', updateHistory);
+        document.getElementById('historyOrigin').addEventListener('change', updateHistory);
+        setInterval(updateHistory, 30000);
 
         document.getElementById('captureMode').addEventListener('change', function(e) {
             if (e.target.value === 'pcap') {
@@ -171,6 +290,7 @@
         async function fetchInterfaces() {
             try {
                 const res = await fetch('/api/v2/interfaces');
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
                 const select = document.getElementById('interfaceSelect');
                 select.innerHTML = '';
@@ -182,21 +302,78 @@
                 });
             } catch (err) {
                 console.error("Error fetching interfaces:", err);
+                document.getElementById('statusBannerText').textContent =
+                    'Dashboard connection error while loading interfaces';
             }
         }
 
         async function updateDashboard() {
+            if (dashboardRequestInFlight) return;
+            dashboardRequestInFlight = true;
             try {
-                const res = await fetch('/api/v2/alerts?limit=50');
+                const res = await fetch('/api/v2/alerts?limit=100', { cache: 'no-store' });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
                 const status = data.status;
+                if (!status || !status.stats) throw new Error('Invalid status response');
                 const stats = status.stats;
+                if (status.runtime_role === 'hosted_web') {
+                    document.getElementById('healthModel').textContent = 'Model status: local sensor only';
+                    document.getElementById('healthPacket').textContent = 'Last packet: unavailable on hosted web';
+                    document.getElementById('healthInference').textContent = 'Last inference: unavailable on hosted web';
+                    document.getElementById('healthErrors').textContent = 'Capture and processing counters: local sensor only';
+                    document.getElementById('healthEmailAlerts').textContent = 'Email alerts: delivered by local sensor';
+                    document.getElementById('healthStrip').title = 'Hosted role does not run capture or inference';
+                    ['kpiPackets', 'kpiActiveFlows', 'kpiCompletedFlows', 'kpiBenign',
+                        'kpiAttacks', 'kpiAttackRate', 'kpiRecentAlerts'].forEach(id => {
+                        document.getElementById(id).textContent = '—';
+                    });
+                    const badge = document.getElementById('threatLevelBadge');
+                    badge.textContent = 'SENSOR';
+                    badge.className = 'threat-badge';
+                    document.getElementById('statusIndicatorDot').className = 'status-dot online';
+                    document.getElementById('statusBannerText').textContent =
+                        'Hosted web role ready · live capture, inference, and counters belong to the local sensor';
+                    ['btnStart', 'btnStop', 'btnSimulate', 'btnClear', 'captureMode',
+                        'interfaceSelect', 'pcapPathInput'].forEach(id => {
+                        document.getElementById(id).disabled = true;
+                    });
+                    const tbody = document.getElementById('alertTableBody');
+                    tbody.innerHTML = `<tr><td colspan="11" class="empty-row">${data.feed_reason || 'Live flow feed is unavailable in the hosted role.'}</td></tr>`;
+                    return;
+                }
+                document.getElementById('healthModel').textContent =
+                    status.model_available
+                        ? 'Model status: available'
+                        : `Model status: unavailable · ${status.model_status_message || 'Restore the expected model artifact and restart the local sensor.'}`;
+                document.getElementById('healthPacket').textContent =
+                    `Last packet: ${stats.last_packet_time || 'none'}`;
+                document.getElementById('healthInference').textContent =
+                    `Last inference: ${stats.last_inference_time || 'none'}`;
+                document.getElementById('healthErrors').textContent =
+                    `Processing errors: ${stats.processing_errors || 0} · Capture errors: ${stats.capture_errors || 0}`;
+                const emailAlerts = status.email_alerts;
+                const emailStatus = emailAlerts && emailAlerts.state
+                    ? `${emailAlerts.message} · ${emailAlerts.pending || 0} pending, ${emailAlerts.delivered || 0} delivered, ${emailAlerts.failed || 0} failed`
+                    : 'Email alert status unavailable';
+                document.getElementById('healthEmailAlerts').textContent = `Email alerts: ${emailStatus}`;
+                const healthStrip = document.getElementById('healthStrip');
+                healthStrip.title = [stats.last_processing_error, stats.last_capture_error].filter(Boolean).join(' | ');
 
                 // Update KPI values
                 document.getElementById('kpiPackets').textContent = (stats.packets_processed || 0).toLocaleString();
                 document.getElementById('kpiActiveFlows').textContent = (stats.active_flows || 0).toLocaleString();
+                document.getElementById('kpiCompletedFlows').textContent = (stats.completed_flows || 0).toLocaleString();
                 document.getElementById('kpiBenign').textContent = (stats.benign_count || 0).toLocaleString();
-                document.getElementById('kpiAttacks').textContent = (stats.attack_count || 0).toLocaleString();
+                document.getElementById('kpiAttacks').textContent = (stats.attacks_flagged || 0).toLocaleString();
+                const classifiedFlows = (stats.classified_flows || 0);
+                const attackRate = classifiedFlows
+                    ? ((stats.attacks_flagged || 0) / classifiedFlows * 100).toFixed(1)
+                    : '0.0';
+                document.getElementById('kpiAttackRate').textContent = `${attackRate}%`;
+                document.getElementById('kpiRecentAlerts').textContent =
+                    (data.alerts || []).filter(alert => alert.label === 'ATTACK')
+                        .reduce((count, alert) => count + (alert.occurrence_count || 1), 0).toLocaleString();
 
                 // Threat Level Badge
                 const threatBadge = document.getElementById('threatLevelBadge');
@@ -209,32 +386,60 @@
                 const bannerText = document.getElementById('statusBannerText');
                 const btnStart = document.getElementById('btnStart');
                 const btnStop = document.getElementById('btnStop');
+                document.getElementById('btnSimulate').disabled = !status.model_available;
+                const captureMode = document.getElementById('captureMode');
+                const interfaceSelect = document.getElementById('interfaceSelect');
+                const pcapPathInput = document.getElementById('pcapPathInput');
+                captureMode.disabled = status.is_running;
+                interfaceSelect.disabled = status.is_running;
+                pcapPathInput.disabled = status.is_running;
+                if (status.is_running && (status.mode === 'live' || status.mode === 'pcap')) {
+                    captureMode.value = status.mode;
+                    captureMode.dispatchEvent(new Event('change'));
+                }
 
                 if (status.is_running) {
-                    dot.className = "status-dot online pulsing";
-                    bannerText.textContent = `Active Sniffer (${status.mode.toUpperCase()}) running on ${status.active_interface}`;
+                    const degraded = !status.model_available || stats.capture_errors || stats.processing_errors;
+                    dot.className = degraded ? "status-dot offline" : "status-dot online pulsing";
+                    bannerText.textContent = status.shutdown_warning || (status.stop_requested
+                        ? `Stopping ${status.mode.toUpperCase()} capture · waiting for flow cleanup`
+                        : `Active Sniffer (${status.mode.toUpperCase()}) running on ${status.active_interface}` +
+                            (degraded ? ' · degraded: check model and error indicators' : ''));
                     btnStart.disabled = true;
                     btnStart.classList.add('disabled');
-                    btnStop.disabled = false;
-                    btnStop.classList.remove('disabled');
+                    btnStop.disabled = Boolean(status.stop_requested);
+                    btnStop.classList.toggle('disabled', Boolean(status.stop_requested));
                 } else {
                     dot.className = "status-dot offline";
-                    if (status.error_message) {
+                    if (status.shutdown_warning) {
+                        bannerText.textContent = status.shutdown_warning;
+                    } else if (!status.model_available) {
+                        bannerText.textContent = status.model_status_message ||
+                            'V2 model unavailable. Restore the expected model artifact and restart the local sensor.';
+                    } else if (stats.capture_errors || stats.processing_errors) {
+                        bannerText.textContent = `Engine stopped with errors · capture ${stats.capture_errors || 0}, processing ${stats.processing_errors || 0}`;
+                    } else if (status.error_message) {
                         bannerText.textContent = `Engine Stopped (Notice: ${status.error_message})`;
+                    } else if (status.last_run_status === 'completed') {
+                        bannerText.textContent = `${(status.last_run_mode || 'Capture').toUpperCase()} run completed · ${stats.packets_processed.toLocaleString()} packets, ${stats.completed_flows.toLocaleString()} flows`;
+                    } else if (status.last_run_status === 'stopped') {
+                        bannerText.textContent = `${(status.last_run_mode || 'Capture').toUpperCase()} run stopped · ${stats.packets_processed.toLocaleString()} packets processed`;
                     } else {
                         bannerText.textContent = `Engine Idle - Click "Start Tracking" or "Simulate Attack Traffic"`;
                     }
-                    btnStart.disabled = false;
-                    btnStart.classList.remove('disabled');
+                    btnStart.disabled = !status.model_available;
+                    btnStart.classList.toggle('disabled', !status.model_available);
                     btnStop.disabled = true;
                     btnStop.classList.add('disabled');
                 }
 
                 // Render Table
                 const tbody = document.getElementById('alertTableBody');
-                if (data.alerts && data.alerts.length > 0) {
+                const feedItems = (data.feed || []).filter(item =>
+                    item.label === 'ATTACK' || item.label === 'BENIGN');
+                if (feedItems.length > 0) {
                     tbody.innerHTML = '';
-                    data.alerts.forEach(alert => {
+                    feedItems.forEach(alert => {
                         const tr = document.createElement('tr');
                         tr.className = alert.label === 'ATTACK' ? 'row-attack' : 'row-benign';
 
@@ -242,20 +447,69 @@
                             ? `<span class="badge-attack">🚨 ATTACK</span>`
                             : `<span class="badge-benign">✓ BENIGN</span>`;
 
-                        tr.innerHTML = `
-                            <td>${alert.timestamp}</td>
-                            <td>${labelBadge}</td>
-                            <td><code>${alert.src_ip}:${alert.src_port}</code></td>
-                            <td><code>${alert.dst_ip}:${alert.dst_port}</code></td>
-                            <td><span class="protocol-tag">${alert.protocol}</span></td>
-                            <td>${alert.packets}</td>
-                            <td><strong>${alert.confidence}%</strong></td>
-                        `;
+                        const values = [alert.timestamp, null, alert.detection_source || 'ml',
+                            alert.traffic_origin || 'capture', alert.occurrence_count || 1,
+                            alert.last_seen || alert.timestamp,
+                            `${alert.src_ip}:${alert.src_port}`, `${alert.dst_ip}:${alert.dst_port}`,
+                            alert.protocol, alert.packets, `${alert.confidence}%`];
+                        values.forEach((value, index) => {
+                            const td = document.createElement('td');
+                            if (index === 1) td.innerHTML = labelBadge;
+                            else if (index === 6 || index === 7) {
+                                const code = document.createElement('code');
+                                code.textContent = value;
+                                td.appendChild(code);
+                            } else if (index === 8) {
+                                const tag = document.createElement('span');
+                                tag.className = 'protocol-tag';
+                                tag.textContent = value;
+                                td.appendChild(tag);
+                            } else if (index === 10) {
+                                const strong = document.createElement('strong');
+                                strong.textContent = value;
+                                td.appendChild(strong);
+                            } else td.textContent = value;
+                            tr.appendChild(td);
+                        });
                         tbody.appendChild(tr);
                     });
+                } else {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="11" class="empty-row">
+                                No flow classifications recorded yet.
+                            </td>
+                        </tr>`;
                 }
             } catch (err) {
                 console.error("Error updating V2 dashboard:", err);
+                const dot = document.getElementById('statusIndicatorDot');
+                dot.className = 'status-dot offline';
+                document.getElementById('statusBannerText').textContent =
+                    'Dashboard connection error - retrying automatically';
+                ['kpiPackets', 'kpiActiveFlows', 'kpiCompletedFlows', 'kpiBenign',
+                    'kpiAttacks', 'kpiAttackRate', 'kpiRecentAlerts'].forEach(id => {
+                    document.getElementById(id).textContent = '—';
+                });
+                document.getElementById('healthModel').textContent = 'Model status: unavailable';
+                document.getElementById('healthPacket').textContent = 'Last packet: unavailable';
+                document.getElementById('healthInference').textContent = 'Last inference: unavailable';
+                document.getElementById('healthErrors').textContent = 'Processing errors: unavailable · Capture errors: unavailable';
+                document.getElementById('healthEmailAlerts').textContent = 'Email alerts: status unavailable';
+                document.getElementById('healthStrip').title = 'Dashboard status request failed';
+                const threatBadge = document.getElementById('threatLevelBadge');
+                threatBadge.textContent = 'UNKNOWN';
+                threatBadge.className = 'threat-badge';
+                document.getElementById('btnStart').disabled = true;
+                document.getElementById('btnStop').disabled = true;
+                document.getElementById('captureMode').disabled = true;
+                document.getElementById('interfaceSelect').disabled = true;
+                document.getElementById('pcapPathInput').disabled = true;
+                const tbody = document.getElementById('alertTableBody');
+                tbody.innerHTML = '<tr><td colspan="11" class="empty-row">Dashboard data is unavailable. Retrying automatically.</td></tr>';
+            } finally {
+                dashboardRequestInFlight = false;
+                if (isPolling) setTimeout(updateDashboard, 1500);
             }
         }
 
@@ -264,25 +518,42 @@
             const interfaceVal = document.getElementById('interfaceSelect').value;
             const pcapPath = document.getElementById('pcapPathInput').value;
 
-            const res = await fetch('/api/v2/start', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    mode: mode,
-                    interface: interfaceVal,
-                    pcap_path: pcapPath
-                })
-            });
-            const data = await res.json();
-            if (!data.success) {
-                alert(data.message);
+            try {
+                const res = await fetch('/api/v2/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        mode: mode,
+                        interface: interfaceVal,
+                        pcap_path: pcapPath
+                    })
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    alert(data.message || data.error || `Request failed (HTTP ${res.status}).`);
+                }
+            } catch (err) {
+                console.error("Error starting V2 engine:", err);
+                alert("Unable to reach the detection engine.");
             }
             updateDashboard();
         }
 
         async function stopSniffer() {
-            await fetch('/api/v2/stop', { method: 'POST' });
-            updateDashboard();
+            try {
+                const res = await fetch('/api/v2/stop', { method: 'POST' });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                if (!data.success) {
+                    document.getElementById('statusBannerText').textContent =
+                        data.status?.shutdown_warning || data.message || 'Capture shutdown is still in progress.';
+                }
+                await updateDashboard();
+            } catch (err) {
+                console.error('Error stopping V2 engine:', err);
+                document.getElementById('statusBannerText').textContent =
+                    'Unable to stop capture: dashboard connection error';
+            }
         }
 
         async function triggerSimulation() {
@@ -293,13 +564,7 @@
             });
             const data = await res.json();
             alert(data.message);
-
-            // Auto-start PCAP / Live if idle so user immediately sees simulation
-            const statusRes = await fetch('/api/v2/status');
-            const status = await statusRes.json();
-            if (!status.is_running) {
-                startSniffer();
-            }
+            await updateDashboard();
         }
 
         async function clearAlerts() {
@@ -310,7 +575,7 @@
         // Initialize
         fetchInterfaces();
         updateDashboard();
-        setInterval(updateDashboard, 1500);
+        updateHistory();
     </script>
 </body>
 </html>
