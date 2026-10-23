@@ -430,18 +430,86 @@ def get_v2_status():
     return response
 
 
+
 @app.route("/api/v2/alerts", methods=["GET"])
 def get_v2_alerts():
     limit = request.args.get("limit", 50, type=int)
+    limit = max(1, min(limit, 100))
+
     if RUNTIME_ROLE == "hosted_web":
-        snapshot = {"alerts": [], "feed": [], "status": _hosted_status(),
-                    "feed_available": False,
-                    "feed_reason": "The hosted event schema does not store the flow details shown in the local feed."}
+        end = datetime.now(timezone.utc)
+        start = end - timedelta(hours=24)
+
+        try:
+            repository = _event_repository()
+            events = list(repository.iter_events(
+                start,
+                end,
+                origins=("live", "pcap", "simulation"),
+                event_types=("flow_classification", "alert"),
+            ))
+            # iter_events is ordered oldest-first; the dashboard needs newest first.
+            events = events[-limit:][::-1]
+
+            feed = []
+            alerts = []
+
+            for event in events:
+                metadata = event.get("metadata") or {}
+                label = event.get("classification")
+                event_type = event.get("event_type")
+                timestamp = event.get("occurred_at_utc", "")
+                protocol = metadata.get("protocol", "—")
+                packets = metadata.get("packet_count", 0)
+                confidence = metadata.get("confidence_percent")
+
+                item = {
+                    "id": event.get("event_id"),
+                    "timestamp": timestamp,
+                    "last_seen": timestamp,
+                    "occurrence_count": 1,
+                    "label": label,
+                    "detection_source": metadata.get("alert_source", "ml"),
+                    "traffic_origin": event.get("origin", "unknown"),
+                    "src_ip": "—",
+                    "src_port": "—",
+                    "dst_ip": "—",
+                    "dst_port": "—",
+                    "protocol": protocol,
+                    "packets": packets,
+                    "confidence": confidence if confidence is not None else "—",
+                    "event_type": event_type,
+                }
+
+                if label in {"ATTACK", "BENIGN"}:
+                    feed.append(item)
+
+                if event_type == "alert" and label == "ATTACK":
+                    alerts.append(item)
+
+            snapshot = {
+                "alerts": alerts,
+                "feed": feed,
+                "status": _hosted_status(),
+                "feed_available": True,
+                "feed_reason": (
+                    "Showing persisted sensor classifications. "
+                    "IP addresses, ports, and live packet counters are not stored "
+                    "in the hosted event schema."
+                ),
+            }
+        except Exception as exc:
+            logger.error("hosted dashboard event query failed (%s)", type(exc).__name__)
+            return jsonify({
+                "error": "Hosted dashboard event history is temporarily unavailable."
+            }), 503
     else:
         snapshot = v2_engine.get_dashboard_snapshot(limit=limit)
+
     response = jsonify(snapshot)
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     return response
+
 
 
 @app.route("/api/v2/email-alerts/status", methods=["GET"])

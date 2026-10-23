@@ -83,10 +83,37 @@ for route, method in [("/api/v2/start", "post"), ("/api/v2/stop", "post"),
                       ("/api/v2/interfaces", "get")]:
     response = getattr(client, method)(route, auth=auth)
     assert response.status_code == 403, (route, response.status_code)
+# Hosted dashboards read persisted events, not local sensor counters.
 assert client.get("/api/v2/alerts", auth=auth).json["status"]["stats"]["packets_processed"] is None
-assert client.get("/api/v2/alerts", auth=auth).json["feed_available"] is False
-assert client.get("/", auth=auth).status_code == 503
 
+from datetime import datetime, timedelta, timezone
+repository.events = [{
+    "event_id": "9f8c84fb-450c-4bb4-b792-64ce6a98b6f2",
+    "schema_version": 1,
+    "occurred_at_utc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+    "origin": "live",
+    "session_id": None,
+    "event_type": "flow_classification",
+    "classification": "ATTACK",
+    "metadata": {
+        "packet_count": 4,
+        "byte_count": 240,
+        "protocol": "TCP",
+        "confidence_percent": 97.5,
+    },
+}]
+
+feed_response = client.get("/api/v2/alerts", auth=auth)
+assert feed_response.status_code == 200
+assert feed_response.json["feed_available"] is True
+assert len(feed_response.json["feed"]) == 1
+assert feed_response.json["feed"][0]["label"] == "ATTACK"
+assert feed_response.json["feed"][0]["protocol"] == "TCP"
+assert feed_response.json["feed"][0]["confidence"] == 97.5
+assert feed_response.json["feed"][0]["src_ip"] == "—"
+assert feed_response.json["feed"][0]["dst_ip"] == "—"
+
+assert client.get("/", auth=auth).status_code == 503
 # Exercise the hosted inference route without network access or model downloads.
 class FakeModel:
     def predict_proba(self, features):
