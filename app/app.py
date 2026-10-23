@@ -313,7 +313,7 @@ FEATURES = [
 ]
 
 # ============================================================
-# LOAD V1 MODEL (local sensor role only)
+# LOAD V1 MODEL (local sensor and hosted web roles)
 # ============================================================
 
 if RUNTIME_ROLE == "local_sensor":
@@ -335,19 +335,33 @@ if RUNTIME_ROLE == "local_sensor":
         MODEL_LOADED = False
         print("ERROR loading V1 model:", type(e).__name__)
 
+elif RUNTIME_ROLE == "hosted_web":
+    import pandas as pd
+    import joblib
+    try:
+        from app.hosted_model_loader import download_verified_v1_model
+        verified_model_path = download_verified_v1_model()
+        model = joblib.load(verified_model_path)
+        MODEL_LOADED = True
+        print("Hosted V1 LightGBM model loaded successfully.")
+    except Exception as e:
+        MODEL_LOADED = False
+        model = None
+        logger.warning("Hosted V1 model unavailable (%s)", type(e).__name__)
 
-# ============================================================
+
 # V1 HOME PAGE (STATIC DETECTION)
 # ============================================================
 
 @app.route("/", methods=["GET", "POST"])
 def index():
-    if RUNTIME_ROLE == "hosted_web":
+    if not MODEL_LOADED or model is None:
         return render_template(
             "index.html", features=FEATURES, values={feature: "" for feature in FEATURES},
             prediction=None, probability=None, confidence=None, threshold=THRESHOLD,
-            error="V1 model inference is unavailable in the hosted web role.", model_loaded=False,
+            error="V1 model inference is temporarily unavailable.", model_loaded=False,
         ), 503
+
     prediction = None
     probability = None
     confidence = None

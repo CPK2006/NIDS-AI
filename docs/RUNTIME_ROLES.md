@@ -9,8 +9,12 @@ default is `local_sensor`.
   critical email alerts.
 - `hosted_web` serves the authenticated dashboard and APIs, receives forwarded
   sensor events, and reads hosted history from PostgreSQL. It does not import
-  Scapy or the local detector, load local models, or start capture, forwarding,
-  or email workers.
+  Scapy or the local detector and does not start capture, forwarding, or email
+  workers. Hosted V1 inference downloads the LightGBM model from the private
+  Hugging Face repository configured by `HF_MODEL_REPO` (default
+  `CPK2006/nids-ai-model-artifacts`) using `HF_TOKEN`. It verifies the model's
+  SHA-256 against `model_artifacts.sha256` before deserialization. This does not
+  enable V2 live packet capture or sensor-local inference.
 - `hosted_worker` runs the critical email outbox worker against shared
   PostgreSQL; it does not run Flask or packet capture.
 - `report_job` runs one weekly report from shared PostgreSQL. An external
@@ -43,11 +47,16 @@ Install the pinned local stack and Scapy from a clean Windows checkout with:
 ```
 
 Model files are deliberately ignored by Git (`*.pkl`, `*.joblib`, and
-`results/*`). No model owner has approved these local binaries for release, and
-no trusted artifact source or transfer process has been established. This
-repository does not host or identify a distribution channel. A model owner must
-decide whether these exact binaries are approved runtime releases and name the
-trusted source from which clean checkouts should obtain them.
+`results/*`). The hosted V1 deployment is configured to retrieve the LightGBM
+artifact from the private Hugging Face repository
+`CPK2006/nids-ai-model-artifacts` by default. `HF_TOKEN` must be configured in
+the deployment environment with read access to that repository; `HF_MODEL_REPO`
+can override the repository ID. The hosted loader verifies the V1 file against
+the checked-in manifest before deserialization. A matching checksum establishes
+byte integrity relative to that manifest, not model provenance, training-run
+identity, or release approval. The repository and deployment configuration
+alone do not establish that a model owner has approved these binaries for
+release.
 
 The current local `model_artifacts.sha256` lists only the three runtime files:
 the V2 Random Forest, V1 LightGBM primary, and V1 CatBoost fallback. The
@@ -79,9 +88,11 @@ that it has passed. Hosted Linux startup has not yet been validated in an
 approved Linux environment; treat that deployment check as outstanding.
 
 The hosted runtime has a separate pinned dependency set. It intentionally
-excludes Scapy, training libraries, and Windows-only `pywinpty` from the Linux
-image. `requirements.txt` remains the existing development environment;
-`requirements-sensor.txt` extends it with Scapy for the local sensor.
+excludes Scapy and Windows-only `pywinpty` from the Linux image. It includes
+the pinned Hugging Face Hub, joblib, LightGBM, NumPy, pandas, and scikit-learn
+dependencies needed for hosted V1 inference. `requirements.txt` remains the
+existing development environment; `requirements-sensor.txt` extends it with
+Scapy for the local sensor.
 
 Production entrypoints:
 
