@@ -318,28 +318,107 @@
                 if (!status || !status.stats) throw new Error('Invalid status response');
                 const stats = status.stats;
                 if (status.runtime_role === 'hosted_web') {
-                    document.getElementById('healthModel').textContent = 'Model status: local sensor only';
-                    document.getElementById('healthPacket').textContent = 'Last packet: unavailable on hosted web';
-                    document.getElementById('healthInference').textContent = 'Last inference: unavailable on hosted web';
-                    document.getElementById('healthErrors').textContent = 'Capture and processing counters: local sensor only';
-                    document.getElementById('healthEmailAlerts').textContent = 'Email alerts: delivered by local sensor';
-                    document.getElementById('healthStrip').title = 'Hosted role does not run capture or inference';
-                    ['kpiPackets', 'kpiActiveFlows', 'kpiCompletedFlows', 'kpiBenign',
-                        'kpiAttacks', 'kpiAttackRate', 'kpiRecentAlerts'].forEach(id => {
-                        document.getElementById(id).textContent = '—';
-                    });
+                    const online = status.sensor_online === true &&
+                        status.local_metrics_available === true;
+                    const stats = status.stats || {};
+                    const unavailable = '?';
+
+                    document.getElementById('healthModel').textContent =
+                        `Model status: ${online ? (status.model_available ? 'available on local sensor' : 'unavailable on local sensor') : 'local sensor offline'}`;
+                    document.getElementById('healthPacket').textContent =
+                        `Last packet: ${online ? (stats.last_packet_time || 'none') : 'unavailable'}`;
+                    document.getElementById('healthInference').textContent =
+                        `Last inference: ${online ? (stats.last_inference_time || 'none') : 'unavailable'}`;
+                    document.getElementById('healthErrors').textContent =
+                        `Processing errors: ${online ? (stats.processing_errors ?? 0) : unavailable} | Capture errors: ${online ? (stats.capture_errors ?? 0) : unavailable}`;
+                    document.getElementById('healthEmailAlerts').textContent =
+                        'Email alerts: managed by the configured alert service';
+                    document.getElementById('healthStrip').title =
+                        online ? `Sensor metrics received ${status.sensor_metrics_age_seconds ?? '?'} seconds ago` : 'No fresh sensor metrics received';
+
+                    const metric = (value) => online && value !== null && value !== undefined
+                        ? Number(value).toLocaleString() : unavailable;
+
+                    document.getElementById('kpiPackets').textContent = metric(stats.packets_processed);
+                    document.getElementById('kpiActiveFlows').textContent = metric(stats.active_flows);
+                    document.getElementById('kpiCompletedFlows').textContent = metric(stats.completed_flows);
+                    document.getElementById('kpiBenign').textContent = metric(stats.benign_count);
+                    document.getElementById('kpiAttacks').textContent = metric(stats.attacks_flagged);
+
+                    const classified = Number(stats.classified_flows || 0);
+                    document.getElementById('kpiAttackRate').textContent =
+                        online ? `${classified ? (Number(stats.attacks_flagged || 0) / classified * 100).toFixed(1) : '0.0'}%` : unavailable;
+                    document.getElementById('kpiRecentAlerts').textContent =
+                        (data.alerts || []).filter(alert => alert.label === 'ATTACK')
+                            .reduce((count, alert) => count + (alert.occurrence_count || 1), 0).toLocaleString();
+
                     const badge = document.getElementById('threatLevelBadge');
-                    badge.textContent = 'SENSOR';
-                    badge.className = 'threat-badge';
-                    document.getElementById('statusIndicatorDot').className = 'status-dot online';
-                    document.getElementById('statusBannerText').textContent =
-                        'Hosted web role ready · live capture, inference, and counters belong to the local sensor';
+                    badge.textContent = online ? (stats.threat_level || 'LOW') : 'OFFLINE';
+                    badge.className = online
+                        ? `threat-badge threat-${String(stats.threat_level || 'LOW').toLowerCase()}`
+                        : 'threat-badge';
+
+                    document.getElementById('statusIndicatorDot').className =
+                        online ? (status.is_running ? 'status-dot online pulsing' : 'status-dot online') : 'status-dot offline';
+                    document.getElementById('statusBannerText').textContent = online
+                        ? `Hosted dashboard - local sensor ${status.is_running ? 'running' : 'connected but idle'} - metrics ${status.sensor_metrics_age_seconds ?? '?'}s old`
+                        : 'Local sensor offline or waiting for its first metrics update. Historical events remain available.';
+
+                    // Hosted capture controls must remain disabled.
                     ['btnStart', 'btnStop', 'btnSimulate', 'btnClear', 'captureMode',
                         'interfaceSelect', 'pcapPathInput'].forEach(id => {
-                        document.getElementById(id).disabled = true;
+                        const el = document.getElementById(id);
+                        if (el) el.disabled = true;
                     });
+
+                    // Render the persisted hosted event feed using the existing table layout.
                     const tbody = document.getElementById('alertTableBody');
-                    tbody.innerHTML = `<tr><td colspan="11" class="empty-row">${data.feed_reason || 'Live flow feed is unavailable in the hosted role.'}</td></tr>`;
+                    const feedItems = (data.feed || []).filter(item =>
+                        item.label === 'ATTACK' || item.label === 'BENIGN');
+                    if (feedItems.length) {
+                        tbody.innerHTML = '';
+                        feedItems.forEach(alert => {
+                            const tr = document.createElement('tr');
+                            tr.className = alert.label === 'ATTACK' ? 'row-attack' : 'row-benign';
+                            const badgeHtml = alert.label === 'ATTACK'
+                                ? '<span class="badge-attack">ATTACK</span>'
+                                : '<span class="badge-benign">BENIGN</span>';
+                            const values = [
+                                alert.timestamp || '?', null,
+                                alert.detection_source || 'ml',
+                                alert.traffic_origin || 'capture',
+                                alert.occurrence_count || 1,
+                                alert.last_seen || alert.timestamp || '?',
+                                `${alert.src_ip || '?'}:${alert.src_port ?? '?'}`,
+                                `${alert.dst_ip || '?'}:${alert.dst_port ?? '?'}`,
+                                alert.protocol || '?',
+                                alert.packets ?? '?',
+                                alert.confidence == null ? '?' : `${alert.confidence}%`
+                            ];
+                            values.forEach((value, index) => {
+                                const td = document.createElement('td');
+                                if (index === 1) td.innerHTML = badgeHtml;
+                                else if (index === 6 || index === 7) {
+                                    const code = document.createElement('code');
+                                    code.textContent = String(value);
+                                    td.appendChild(code);
+                                } else if (index === 8) {
+                                    const tag = document.createElement('span');
+                                    tag.className = 'protocol-tag';
+                                    tag.textContent = String(value);
+                                    td.appendChild(tag);
+                                } else if (index === 10) {
+                                    const strong = document.createElement('strong');
+                                    strong.textContent = String(value);
+                                    td.appendChild(strong);
+                                } else td.textContent = String(value);
+                                tr.appendChild(td);
+                            });
+                            tbody.appendChild(tr);
+                        });
+                    } else {
+                        tbody.innerHTML = `<tr><td colspan="11" class="empty-row">${data.feed_reason || 'No persisted flow classifications recorded yet.'}</td></tr>`;
+                    }
                     return;
                 }
                 document.getElementById('healthModel').textContent =
