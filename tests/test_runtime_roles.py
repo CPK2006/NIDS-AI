@@ -86,6 +86,22 @@ for route, method in [("/api/v2/start", "post"), ("/api/v2/stop", "post"),
 assert client.get("/api/v2/alerts", auth=auth).json["status"]["stats"]["packets_processed"] is None
 assert client.get("/api/v2/alerts", auth=auth).json["feed_available"] is False
 assert client.get("/", auth=auth).status_code == 503
+
+# Exercise the hosted inference route without network access or model downloads.
+class FakeModel:
+    def predict_proba(self, features):
+        return [[0.9, 0.1]]
+
+module.model = FakeModel()
+module.MODEL_LOADED = True
+home = client.get("/", auth=auth)
+assert home.status_code == 200, home.status_code
+
+form = {feature: "1" for feature in module.FEATURES}
+prediction = client.post("/", data=form, auth=auth)
+assert prediction.status_code == 200, prediction.status_code
+assert b"BENIGN" in prediction.data
+
 assert client.get("/api/v2/start").status_code == 401
 assert client.get("/",).status_code == 401
 health = client.get("/healthz").get_data(as_text=True)

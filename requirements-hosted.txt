@@ -8,3 +8,11 @@ itsdangerous==2.2.0
 Jinja2==3.1.6
 MarkupSafe==3.0.3
 Werkzeug==3.1.8
+
+# Hosted V1 inference and private model artifact download
+huggingface_hub==2.2.0
+joblib==1.5.3
+lightgbm==4.7.0
+numpy==2.4.6
+pandas==3.0.5
+scikit-learn==1.9.0
