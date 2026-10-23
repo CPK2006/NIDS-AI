@@ -204,7 +204,7 @@ def _is_loopback_request():
 @app.before_request
 def protect_monitoring_routes():
     """Protect all application routes except health and dedicated sensor ingestion."""
-    if request.path in {"/healthz", "/readyz", "/api/v1/sensor/events"} or request.path.startswith("/static/"):
+    if request.path in {"/healthz", "/readyz", "/api/v1/sensor/events", "/api/v1/sensor/metrics"} or request.path.startswith("/static/"):
         return None
 
     username = app.config["NETRA_AUTH_USERNAME"]
@@ -240,6 +240,33 @@ def _hosted_delivery_status(*, include_failures: bool = False):
         logger.error("shared email alert status query failed (%s)", type(exc).__name__)
         return {"state": "unavailable", "message": "Shared email alert status is temporarily unavailable.",
                 "storage_status": "error", "pending": None, "delivered": None, "failed": None}
+
+
+# Latest authenticated local-sensor snapshot; deliberately not persisted.
+_sensor_metrics_lock = threading.Lock()
+_latest_sensor_metrics = None
+_latest_sensor_metrics_received_at = 0.0
+_SENSOR_METRICS_MAX_AGE_SECONDS = 20
+
+def _hosted_status_with_sensor_metrics():
+    result = _hosted_status()
+    with _sensor_metrics_lock:
+        snapshot = _latest_sensor_metrics
+        received_at = _latest_sensor_metrics_received_at
+
+    age = time.time() - received_at if received_at else None
+    if snapshot is None or age is None or age > _SENSOR_METRICS_MAX_AGE_SECONDS:
+        result["sensor_online"] = False
+        result["sensor_metrics_age_seconds"] = None if age is None else round(age, 1)
+        return result
+
+    result.update(snapshot)
+    result["runtime_role"] = "hosted_web"
+    result["capture_available"] = False
+    result["local_metrics_available"] = True
+    result["sensor_online"] = True
+    result["sensor_metrics_age_seconds"] = round(age, 1)
+    return result
 
 
 def _hosted_status():
@@ -431,6 +458,93 @@ def get_v2_status():
 
 
 
+@app.route("/api/v1/sensor/metrics", methods=["POST"])
+def _receive_sensor_metrics():
+    """Receive a bounded, authenticated live status snapshot from the local sensor."""
+    global _latest_sensor_metrics, _latest_sensor_metrics_received_at
+
+    if RUNTIME_ROLE != "hosted_web":
+        return jsonify({"error": "Metrics receiver is available only on the hosted service."}), 404
+
+    configured_key = app.config["NETRA_SENSOR_API_KEY"]
+    if not configured_key or len(configured_key) < 32:
+        return jsonify({"error": "Sensor metrics are not configured."}), 503
+
+    auth_header = request.headers.get("Authorization", "")
+    scheme, separator, supplied_key = auth_header.partition(" ")
+    if (not separator or scheme.lower() != "bearer"
+            or not hmac.compare_digest(supplied_key.encode("utf-8"), configured_key.encode("utf-8"))):
+        return jsonify({"error": "Authentication required."}), 401
+
+    if _sensor_rate_limited("metrics:" + (request.remote_addr or "unknown")):
+        response = jsonify({"error": "Metrics rate limit exceeded."})
+        response.headers["Retry-After"] = str(SENSOR_RATE_WINDOW_SECONDS)
+        return response, 429
+
+    if request.content_length is not None and request.content_length > 16384:
+        return jsonify({"error": "Request body exceeds the configured limit."}), 413
+    if not request.is_json:
+        return jsonify({"error": "Content-Type must be application/json."}), 415
+
+    try:
+        payload = request.get_json()
+    except Exception:
+        return jsonify({"error": "Malformed JSON request."}), 400
+
+    if not isinstance(payload, dict) or set(payload) != {"status"} or not isinstance(payload["status"], dict):
+        return jsonify({"error": "Request must contain only a status object."}), 400
+
+    incoming = payload["status"]
+    stats = incoming.get("stats")
+    if not isinstance(stats, dict):
+        return jsonify({"error": "Status must contain a stats object."}), 400
+
+    numeric_fields = (
+        "packets_processed", "ignored_packets", "active_flows", "completed_flows",
+        "classified_flows", "simulated_flows", "benign_count", "attack_count",
+        "attacks_flagged", "processing_errors", "capture_errors",
+    )
+    clean_stats = {}
+    for name in numeric_fields:
+        value = stats.get(name)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0:
+            return jsonify({"error": "Invalid numeric metric: " + name}), 400
+        clean_stats[name] = min(int(value), 2**53 - 1)
+
+    for name in ("last_packet_time", "last_inference_time"):
+        value = stats.get(name)
+        clean_stats[name] = value[:64] if isinstance(value, str) else None
+
+    threat = stats.get("threat_level")
+    clean_stats["threat_level"] = threat[:32] if isinstance(threat, str) else "UNAVAILABLE"
+
+    running = incoming.get("is_running")
+    model_available = incoming.get("model_available")
+    if type(running) is not bool or type(model_available) is not bool:
+        return jsonify({"error": "is_running and model_available must be booleans."}), 400
+
+    mode = incoming.get("mode")
+    interface = incoming.get("active_interface")
+    snapshot = {
+        "is_running": running,
+        "stop_requested": incoming.get("stop_requested") is True,
+        "mode": mode[:32] if isinstance(mode, str) else "unknown",
+        "active_interface": interface[:128] if isinstance(interface, str) else "Local sensor",
+        "model_available": model_available,
+        "last_run_mode": None,
+        "last_run_source": None,
+        "last_run_status": "live",
+        "error_message": None,
+        "stats": clean_stats,
+    }
+
+    with _sensor_metrics_lock:
+        _latest_sensor_metrics = snapshot
+        _latest_sensor_metrics_received_at = time.time()
+
+    return jsonify({"accepted": True}), 200
+
+
 @app.route("/api/v2/alerts", methods=["GET"])
 def get_v2_alerts():
     limit = request.args.get("limit", 50, type=int)
@@ -490,7 +604,7 @@ def get_v2_alerts():
             snapshot = {
                 "alerts": alerts,
                 "feed": feed,
-                "status": _hosted_status(),
+                "status": _hosted_status_with_sensor_metrics(),
                 "feed_available": True,
                 "feed_reason": (
                     "Showing persisted sensor classifications. "
@@ -791,6 +905,20 @@ if RUNTIME_ROLE == "local_sensor":
 # ============================================================
 
 if __name__ == "__main__":
+    _metrics_forwarder = None
+    if RUNTIME_ROLE == "local_sensor":
+        from v2.metrics_forwarder import MetricsForwarder
+
+        # Flask debug reload starts a parent and a serving child. Start one sender only.
+        is_serving_process = (
+            os.environ.get("WERKZEUG_RUN_MAIN") == "true"
+        )
+        if is_serving_process:
+            _metrics_forwarder = MetricsForwarder.from_environment(v2_engine)
+            if _metrics_forwarder is not None:
+                _metrics_forwarder.start()
+                atexit.register(_metrics_forwarder.stop)
+
     host = "0.0.0.0" if RUNTIME_ROLE == "hosted_web" else os.getenv("HOST", "127.0.0.1")
     port = int(os.getenv("PORT", "5000"))
     app.run(
