@@ -1,0 +1,6 @@
+{
+    "overall_best_model": "Final CatBoost",
+    "average_metric_score": 0.9983846794130299,
+    "lowest_error_model": "Final CatBoost",
+    "lowest_total_errors": 411
+}

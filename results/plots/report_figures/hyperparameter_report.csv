@@ -1,0 +1,77 @@
+Model,Parameter,Value,Source,Verified
+LightGBM,n_estimators,100,scripts/train_lightgbm.py,Yes
+LightGBM,learning_rate,0.1,scripts/train_lightgbm.py,Yes
+LightGBM,num_leaves,31,scripts/train_lightgbm.py,Yes
+LightGBM,max_depth,-1,scripts/train_lightgbm.py,Yes
+LightGBM,subsample,1.0,scripts/train_lightgbm.py,Yes
+LightGBM,colsample_bytree,1.0,scripts/train_lightgbm.py,Yes
+LightGBM,random_state,42,scripts/train_lightgbm.py,Yes
+LightGBM,importance_metric,split count,scripts/train_lightgbm.py,Yes
+LightGBM,model_artifact,Not saved by this training script,scripts/train_lightgbm.py,Yes
+LightGBM,feature_fraction,Not found in repository,scripts/train_lightgbm.py,No
+LightGBM,reg_alpha,Not found in repository,scripts/train_lightgbm.py,No
+LightGBM,reg_lambda,Not found in repository,scripts/train_lightgbm.py,No
+LightGBM,class_weight,Not found in repository,scripts/train_lightgbm.py,No
+LightGBM,objective,Not found in repository,scripts/train_lightgbm.py,No
+LightGBM,eval_metric,Not found in repository,scripts/train_lightgbm.py,No
+LightGBM,early_stopping,Not found in repository,scripts/train_lightgbm.py,No
+LightGBM,threshold,Not found in repository,scripts/train_lightgbm.py,No
+Extra Trees,n_estimators,100,scripts/train_extra_trees.py,Yes
+Extra Trees,random_state,42,scripts/train_extra_trees.py,Yes
+Extra Trees,n_jobs,-1,scripts/train_extra_trees.py,Yes
+Extra Trees,max_depth,Not found in repository,scripts/train_extra_trees.py,No
+Extra Trees,subsample,Not found in repository,scripts/train_extra_trees.py,No
+Extra Trees,feature_fraction,Not found in repository,scripts/train_extra_trees.py,No
+Extra Trees,reg_alpha,Not found in repository,scripts/train_extra_trees.py,No
+Extra Trees,reg_lambda,Not found in repository,scripts/train_extra_trees.py,No
+Extra Trees,class_weight,Not found in repository,scripts/train_extra_trees.py,No
+Extra Trees,objective,Not found in repository,scripts/train_extra_trees.py,No
+Extra Trees,eval_metric,Not found in repository,scripts/train_extra_trees.py,No
+Extra Trees,early_stopping,Not found in repository,scripts/train_extra_trees.py,No
+Extra Trees,threshold,Not found in repository,scripts/train_extra_trees.py,No
+Histogram Gradient Boosting,max_iter,100,scripts/train_histogram_gradient_boosting.py,Yes
+Histogram Gradient Boosting,learning_rate,0.1,scripts/train_histogram_gradient_boosting.py,Yes
+Histogram Gradient Boosting,max_leaf_nodes,31,scripts/train_histogram_gradient_boosting.py,Yes
+Histogram Gradient Boosting,random_state,42,scripts/train_histogram_gradient_boosting.py,Yes
+Histogram Gradient Boosting,max_depth,Not found in repository,scripts/train_histogram_gradient_boosting.py,No
+Histogram Gradient Boosting,subsample,Not found in repository,scripts/train_histogram_gradient_boosting.py,No
+Histogram Gradient Boosting,feature_fraction,Not found in repository,scripts/train_histogram_gradient_boosting.py,No
+Histogram Gradient Boosting,reg_alpha,Not found in repository,scripts/train_histogram_gradient_boosting.py,No
+Histogram Gradient Boosting,reg_lambda,Not found in repository,scripts/train_histogram_gradient_boosting.py,No
+Histogram Gradient Boosting,class_weight,Not found in repository,scripts/train_histogram_gradient_boosting.py,No
+Histogram Gradient Boosting,objective,Not found in repository,scripts/train_histogram_gradient_boosting.py,No
+Histogram Gradient Boosting,eval_metric,Not found in repository,scripts/train_histogram_gradient_boosting.py,No
+Histogram Gradient Boosting,early_stopping,Not found in repository,scripts/train_histogram_gradient_boosting.py,No
+Histogram Gradient Boosting,threshold,Not found in repository,scripts/train_histogram_gradient_boosting.py,No
+CatBoost,iterations,500,scripts/train_final_catboost.py,Yes
+CatBoost,depth,10,scripts/train_final_catboost.py,Yes
+CatBoost,learning_rate,0.05,scripts/train_final_catboost.py,Yes
+CatBoost,loss_function,Logloss,scripts/train_final_catboost.py,Yes
+CatBoost,random_seed,42,scripts/train_final_catboost.py,Yes
+CatBoost,l2_leaf_reg,3,scripts/train_final_catboost.py,Yes
+CatBoost,validation_threshold,0.004,scripts/train_final_catboost.py,Yes
+CatBoost,max_depth,Not found in repository,scripts/train_final_catboost.py,No
+CatBoost,subsample,Not found in repository,scripts/train_final_catboost.py,No
+CatBoost,feature_fraction,Not found in repository,scripts/train_final_catboost.py,No
+CatBoost,reg_alpha,Not found in repository,scripts/train_final_catboost.py,No
+CatBoost,reg_lambda,Not found in repository,scripts/train_final_catboost.py,No
+CatBoost,class_weight,Not found in repository,scripts/train_final_catboost.py,No
+CatBoost,objective,Not found in repository,scripts/train_final_catboost.py,No
+CatBoost,eval_metric,Not found in repository,scripts/train_final_catboost.py,No
+CatBoost,early_stopping,Not found in repository,scripts/train_final_catboost.py,No
+CatBoost,threshold,Not found in repository,scripts/train_final_catboost.py,No
+Passive Aggressive,C,1.0,scripts/train_passive_aggressive.py,Yes
+Passive Aggressive,max_iter,1000,scripts/train_passive_aggressive.py,Yes
+Passive Aggressive,tol,0.001,scripts/train_passive_aggressive.py,Yes
+Passive Aggressive,random_state,42,scripts/train_passive_aggressive.py,Yes
+Passive Aggressive,max_depth,Not found in repository,scripts/train_passive_aggressive.py,No
+Passive Aggressive,subsample,Not found in repository,scripts/train_passive_aggressive.py,No
+Passive Aggressive,feature_fraction,Not found in repository,scripts/train_passive_aggressive.py,No
+Passive Aggressive,reg_alpha,Not found in repository,scripts/train_passive_aggressive.py,No
+Passive Aggressive,reg_lambda,Not found in repository,scripts/train_passive_aggressive.py,No
+Passive Aggressive,class_weight,Not found in repository,scripts/train_passive_aggressive.py,No
+Passive Aggressive,objective,Not found in repository,scripts/train_passive_aggressive.py,No
+Passive Aggressive,eval_metric,Not found in repository,scripts/train_passive_aggressive.py,No
+Passive Aggressive,early_stopping,Not found in repository,scripts/train_passive_aggressive.py,No
+Passive Aggressive,threshold,Not found in repository,scripts/train_passive_aggressive.py,No
+MLP Neural Network,Configuration,Not found in repository,repository search,No

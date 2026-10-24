@@ -1,0 +1,19 @@
+{
+    "model": "Passive Aggressive Classifier",
+    "accuracy": 0.9447392548551107,
+    "precision": 0.9092623548069093,
+    "recall": 0.7475245780330526,
+    "f1_score": 0.8204989363759427,
+    "training_time": 6.339650630950928,
+    "prediction_time": 0.11296916007995605,
+    "confusion_matrix": [
+        [
+            412414,
+            6351
+        ],
+        [
+            21495,
+            63642
+        ]
+    ]
+}

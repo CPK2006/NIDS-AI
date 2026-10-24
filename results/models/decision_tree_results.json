@@ -1,0 +1,30 @@
+{
+    "model": "Decision Tree",
+    "training_samples": 2015604,
+    "testing_samples": 503902,
+    "features": 65,
+    "criterion": "gini",
+    "max_depth": 20,
+    "min_samples_split": 10,
+    "min_samples_leaf": 5,
+    "class_weight": "balanced",
+    "tree_depth": 20,
+    "number_of_leaves": 626,
+    "accuracy": 0.9989124869518279,
+    "precision": 0.9943198419840815,
+    "recall": 0.9992717619836264,
+    "f1_score": 0.9967896518998465,
+    "roc_auc": 0.9995184054083235,
+    "training_time_seconds": 116.09896850585938,
+    "prediction_time_seconds": 0.3632981777191162,
+    "confusion_matrix": [
+        [
+            418279,
+            486
+        ],
+        [
+            62,
+            85075
+        ]
+    ]
+}

@@ -1,0 +1,42 @@
+Feature_1,Feature_2,Correlation
+Flow Duration,Fwd IAT Total,0.9985398795174026
+Total Fwd Packets,Total Backward Packets,0.9585043071084196
+Total Fwd Packets,Fwd Header Length,0.9761033257567546
+Total Fwd Packets,Fwd Header Length.1,0.9761033257567546
+Total Fwd Packets,Subflow Fwd Packets,1.0
+Total Fwd Packets,Subflow Bwd Packets,0.9585043071084196
+Total Backward Packets,Total Length of Bwd Packets,0.9654899877469953
+Total Backward Packets,Bwd Header Length,0.9778888050797037
+Total Backward Packets,Subflow Fwd Packets,0.9585043071084196
+Total Backward Packets,Subflow Bwd Packets,1.0
+Total Backward Packets,Subflow Bwd Bytes,0.9655022152938023
+Total Length of Fwd Packets,Subflow Fwd Bytes,0.9999995045757115
+Total Length of Bwd Packets,Subflow Bwd Packets,0.9654899877469953
+Total Length of Bwd Packets,Subflow Bwd Bytes,0.9999996341189678
+Fwd Packet Length Max,Fwd Packet Length Std,0.9690093724736865
+Fwd Packet Length Mean,Avg Fwd Segment Size,1.0
+Bwd Packet Length Max,Bwd Packet Length Mean,0.9582894992203213
+Bwd Packet Length Max,Bwd Packet Length Std,0.983181390413722
+Bwd Packet Length Max,Avg Bwd Segment Size,0.9582894992203125
+Bwd Packet Length Mean,Avg Bwd Segment Size,1.0
+Flow Packets/s,Fwd Packets/s,0.982530661655712
+Flow IAT Max,Fwd IAT Max,0.9980770749133511
+Flow IAT Max,Idle Mean,0.97992296106158
+Flow IAT Max,Idle Max,0.9895615126225513
+Flow IAT Max,Idle Min,0.9512922248279054
+Fwd IAT Max,Idle Mean,0.9782990416128962
+Fwd IAT Max,Idle Max,0.988713888164605
+Fwd PSH Flags,SYN Flag Count,1.0
+Fwd URG Flags,CWE Flag Count,1.0
+Fwd Header Length,Fwd Header Length.1,1.0
+Fwd Header Length,Subflow Fwd Packets,0.9761033257567546
+Bwd Header Length,Subflow Bwd Packets,0.9778888050797037
+Max Packet Length,Packet Length Std,0.9842692610600167
+Packet Length Mean,Average Packet Size,0.9978445911301819
+RST Flag Count,ECE Flag Count,0.9991016827572591
+Fwd Header Length.1,Subflow Fwd Packets,0.9761033257567546
+Subflow Fwd Packets,Subflow Bwd Packets,0.9585043071084196
+Subflow Bwd Packets,Subflow Bwd Bytes,0.9655022152938023
+Idle Mean,Idle Max,0.9902324771058154
+Idle Mean,Idle Min,0.9900790635061555
+Idle Max,Idle Min,0.9612421560359116

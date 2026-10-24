@@ -1,0 +1,38 @@
+{
+    "train_shape": [
+        2015604,
+        65
+    ],
+    "test_shape": [
+        503902,
+        65
+    ],
+    "train_target_shape": [
+        2015604
+    ],
+    "test_target_shape": [
+        503902
+    ],
+    "exact_train_test_overlap_hashes": 226,
+    "constant_features": 0,
+    "near_zero_variance_features": 0,
+    "train_nan_values": 0,
+    "test_nan_values": 0,
+    "train_infinite_values": 0,
+    "test_infinite_values": 0,
+    "test_features_outside_train_range": 14,
+    "maximum_train_absolute_mean": 2.565788839452746e-16,
+    "maximum_test_absolute_mean": 0.01007809072595281,
+    "checks": {
+        "train_feature_target_alignment": true,
+        "test_feature_target_alignment": true,
+        "same_feature_count": true,
+        "same_feature_names": true,
+        "no_train_nan": true,
+        "no_test_nan": true,
+        "no_train_inf": true,
+        "no_test_inf": true,
+        "no_exact_train_test_overlap": false,
+        "no_obvious_target_feature_names": true
+    }
+}

@@ -1,0 +1,14 @@
+Feature,Total_Negative,Minimum_Negative,Maximum_Negative
+ Init_Win_bytes_backward,1441552,-1.0,-1.0
+Init_Win_bytes_forward,1001189,-1.0,-1.0
+ Flow IAT Min,2891,-14.0,-1.0
+ Flow Packets/s,115,-2000000.0,-153846.1538
+ Flow Duration,115,-13.0,-1.0
+ Flow IAT Mean,115,-13.0,-1.0
+ Flow IAT Max,115,-13.0,-1.0
+Flow Bytes/s,85,-261000000.0,-461538.4615
+ Fwd Header Length,35,-32212234632.0,-11.0
+ min_seg_size_forward,35,-536870661.0,-1.0
+ Fwd Header Length.1,35,-32212234632.0,-11.0
+ Bwd Header Length,22,-1073741320.0,-83885011.0
+ Fwd IAT Min,17,-12.0,-1.0

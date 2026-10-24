@@ -1,0 +1,19 @@
+{
+    "model": "Final CatBoost",
+    "accuracy": 0.999184365213871,
+    "precision": 0.9967984801576133,
+    "recall": 0.9983790831248458,
+    "f1_score": 0.9975881555551643,
+    "roc_auc": 0.9999733130136554,
+    "average_precision": 0.9998801434657233,
+    "true_negative": 418492,
+    "false_positive": 273,
+    "false_negative": 138,
+    "true_positive": 84999,
+    "total_errors": 411,
+    "false_positive_rate": 0.0006519169462586414,
+    "false_negative_rate": 0.0016209168751541634,
+    "prediction_time": 0.38770437240600586,
+    "test_samples": 503902,
+    "test_features": 65
+}

@@ -1,0 +1,23 @@
+{
+    "model": "Logistic Regression",
+    "training_samples": 2015604,
+    "testing_samples": 503902,
+    "features": 65,
+    "accuracy": 0.957487765478208,
+    "precision": 0.8747456211549094,
+    "recall": 0.8734510259933989,
+    "f1_score": 0.8740978442297294,
+    "roc_auc": 0.9905613592185913,
+    "training_time_seconds": 64.50263404846191,
+    "prediction_time_seconds": 0.317230224609375,
+    "confusion_matrix": [
+        [
+            408117,
+            10648
+        ],
+        [
+            10774,
+            74363
+        ]
+    ]
+}

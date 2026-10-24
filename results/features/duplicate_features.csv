@@ -1,0 +1,34 @@
+Feature_1,Feature_2
+Total Fwd Packets,Subflow Fwd Packets
+Total Backward Packets,Subflow Bwd Packets
+Fwd PSH Flags,SYN Flag Count
+Bwd PSH Flags,Bwd URG Flags
+Bwd PSH Flags,Fwd Avg Bytes/Bulk
+Bwd PSH Flags,Fwd Avg Packets/Bulk
+Bwd PSH Flags,Fwd Avg Bulk Rate
+Bwd PSH Flags,Bwd Avg Bytes/Bulk
+Bwd PSH Flags,Bwd Avg Packets/Bulk
+Bwd PSH Flags,Bwd Avg Bulk Rate
+Fwd URG Flags,CWE Flag Count
+Bwd URG Flags,Fwd Avg Bytes/Bulk
+Bwd URG Flags,Fwd Avg Packets/Bulk
+Bwd URG Flags,Fwd Avg Bulk Rate
+Bwd URG Flags,Bwd Avg Bytes/Bulk
+Bwd URG Flags,Bwd Avg Packets/Bulk
+Bwd URG Flags,Bwd Avg Bulk Rate
+Fwd Header Length,Fwd Header Length.1
+Fwd Avg Bytes/Bulk,Fwd Avg Packets/Bulk
+Fwd Avg Bytes/Bulk,Fwd Avg Bulk Rate
+Fwd Avg Bytes/Bulk,Bwd Avg Bytes/Bulk
+Fwd Avg Bytes/Bulk,Bwd Avg Packets/Bulk
+Fwd Avg Bytes/Bulk,Bwd Avg Bulk Rate
+Fwd Avg Packets/Bulk,Fwd Avg Bulk Rate
+Fwd Avg Packets/Bulk,Bwd Avg Bytes/Bulk
+Fwd Avg Packets/Bulk,Bwd Avg Packets/Bulk
+Fwd Avg Packets/Bulk,Bwd Avg Bulk Rate
+Fwd Avg Bulk Rate,Bwd Avg Bytes/Bulk
+Fwd Avg Bulk Rate,Bwd Avg Packets/Bulk
+Fwd Avg Bulk Rate,Bwd Avg Bulk Rate
+Bwd Avg Bytes/Bulk,Bwd Avg Packets/Bulk
+Bwd Avg Bytes/Bulk,Bwd Avg Bulk Rate
+Bwd Avg Packets/Bulk,Bwd Avg Bulk Rate
