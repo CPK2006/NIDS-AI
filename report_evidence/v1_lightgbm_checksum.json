@@ -1,0 +1,8 @@
+{
+  "path": "results/models/lightgbm_top20_model.pkl",
+  "exists": true,
+  "sha256": "d4331502cab69f17fd123a4e87cdf3c481b6c236baed8a57e04683767bd0fa8d",
+  "manifest_sha256": "d4331502cab69f17fd123a4e87cdf3c481b6c236baed8a57e04683767bd0fa8d",
+  "manifest_line_found": true,
+  "match": true
+}

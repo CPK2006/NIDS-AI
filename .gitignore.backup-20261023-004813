@@ -1,0 +1,69 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual Environment
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Environment
+.env
+
+# Logs
+*.log
+logs/*
+
+# Models
+*.pkl
+*.joblib
+*.h5
+*.pt
+*.pth
+
+# Python cache
+.pytest_cache/
+
+# Build
+build/
+dist/
+
+# Dataset
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/sample/.gitkeep
+
+# Results
+results/*
+!results/.gitkeep
+
+# OS
+.DS_Store
+Thumbs.db
+
+# CICIDS2017 dataset
+data/sample/*.csv
+
+# Generated dataset splits and features
+data/splits/
+data/features/
+
+# CatBoost training information
+catboost_info/
+
+# PCAP captures & PCAP feature exports
+*.pcap
+*.cap
+data/pcap/*
+!data/pcap/.gitkeep/data/netra_events.sqlite3
+/data/netra_email_alerts.sqlite3

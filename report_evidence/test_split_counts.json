@@ -1,0 +1,16 @@
+{
+  "data/splits/y_test.csv": {
+    "rows": 503902,
+    "attack_rows": 85137,
+    "benign_rows": 418765,
+    "attack_share": 0.1689554715004108
+  },
+  "sequential_final_20_percent": {
+    "dataset": "data/sample/cicids2017_binary_deduplicated.csv",
+    "rows": 503902,
+    "attack_rows": 167085,
+    "benign_rows": 336817,
+    "attack_share": 0.33158233148509036,
+    "split_definition": "iloc[int(n*0.8):]"
+  }
+}

@@ -1,0 +1,45 @@
+LightGBM V1 model loaded successfully.
+{
+  "runtime_role": "local_sensor",
+  "model_loaded": true,
+  "model_type": "lightgbm.sklearn.LGBMClassifier",
+  "threshold": 0.5,
+  "features": [
+    "Destination Port",
+    "Bwd Packet Length Std",
+    "Init_Win_bytes_forward",
+    "Init_Win_bytes_backward",
+    "Fwd Header Length",
+    "Average Packet Size",
+    "min_seg_size_forward",
+    "Flow IAT Mean",
+    "Bwd Header Length",
+    "PSH Flag Count",
+    "Flow IAT Min",
+    "Fwd Packet Length Max",
+    "Fwd IAT Min",
+    "Total Length of Bwd Packets",
+    "Max Packet Length",
+    "Fwd IAT Total",
+    "Packet Length Std",
+    "Flow Bytes/s",
+    "Bwd Packet Length Mean",
+    "Packet Length Variance"
+  ],
+  "get_status": 200,
+  "get_has_static_metrics_panel": true,
+  "post_results": [
+    {
+      "status": 200,
+      "classification": "BENIGN",
+      "attack_probability_percent": 0.0006,
+      "threshold": 0.5
+    },
+    {
+      "status": 200,
+      "classification": "BENIGN",
+      "attack_probability_percent": 0.0006,
+      "threshold": 0.5
+    }
+  ]
+}

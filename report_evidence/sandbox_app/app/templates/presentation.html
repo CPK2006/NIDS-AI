@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NIDS-AI Presentation Slide Deck</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='v2_style.css') }}">
+    <style>
+        body.ppt-body {
+            background: #090d16;
+            color: #f8fafc;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .ppt-header {
+            padding: 15px 40px;
+            background: #0f172a;
+            border-bottom: 1px solid #1e293b;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .ppt-container {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        .slide {
+            display: none;
+            width: 100%;
+            max-width: 1150px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 20px;
+            padding: 45px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+            animation: fadeIn 0.4s ease-in-out;
+        }
+
+        .slide.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .slide h2 {
+            font-size: 32px;
+            color: #38bdf8;
+            margin-bottom: 12px;
+        }
+
+        .slide-subtitle {
+            color: #94a3b8;
+            font-size: 16px;
+            margin-bottom: 30px;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+
+        .ppt-card {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 24px;
+        }
+
+        .ppt-card h3 {
+            color: #60a5fa;
+            font-size: 18px;
+            margin-bottom: 12px;
+        }
+
+        .ppt-card ul {
+            padding-left: 20px;
+            color: #cbd5e1;
+            line-height: 1.7;
+        }
+
+        .ppt-card ul li {
+            margin-bottom: 8px;
+        }
+
+        .ppt-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+
+        .ppt-table th {
+            background: #0f172a;
+            color: #94a3b8;
+            padding: 12px;
+            text-align: left;
+            border-bottom: 2px solid #334155;
+        }
+
+        .ppt-table td {
+            padding: 12px;
+            border-bottom: 1px solid #334155;
+            color: #f8fafc;
+        }
+
+        .highlight-text {
+            color: #4ade80;
+            font-weight: 700;
+        }
+
+        .ppt-controls {
+            padding: 15px 40px;
+            background: #0f172a;
+            border-top: 1px solid #1e293b;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .slide-nav-btn {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 22px;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            width: auto;
+            margin: 0;
+        }
+
+        .slide-nav-btn:hover {
+            background: #2563eb;
+        }
+
+        .progress-bar-container {
+            width: 300px;
+            height: 6px;
+            background: #334155;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: #38bdf8;
+            width: 14%;
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body class="ppt-body">
+
+    <!-- HEADER -->
+    <div class="ppt-header">
+        <div class="nav-brand">
+            <span class="shield-icon">🛡️</span>
+            <strong>NIDS-AI Presentation Deck</strong>
+        </div>
+        <div class="nav-links">
+            <a href="/" class="nav-link">V1 Detector</a>
+            <a href="/v2" class="nav-link">V2 Tracker</a>
+            <a href="/presentation" class="nav-link active">Presentation Deck 📊</a>
+        </div>
+    </div>
+
+    <!-- SLIDE CONTAINER -->
+    <div class="ppt-container">
+
+        <!-- SLIDE 1 -->
+        <div class="slide active" id="slide-1">
+            <div class="v2-badge">PROJECT PRESENTATION</div>
+            <h2>NIDS-AI: Next-Gen Network Intrusion Detection</h2>
+            <p class="slide-subtitle">Combining LightGBM Production Tabular ML & Dynamic Scapy Real-Time Traffic Tracking</p>
+            <div class="grid-2">
+                <div class="ppt-card">
+                    <h3>🛡️ Version 1: LightGBM Production Model</h3>
+                    <ul>
+                        <li>Leakage-free feature selection pipeline</li>
+                        <li>Top-20 sequential LightGBM Classifier</li>
+                        <li>Optimal leaf-wise tree growth ($0.55\text{s}$ train time)</li>
+                        <li><strong>99.9946% Accuracy & 99.74% F1-Score</strong></li>
+                    </ul>
+                </div>
+                <div class="ppt-card">
+                    <h3>⚡ Version 2: Dynamic Real-Time Tracker</h3>
+                    <ul>
+                        <li>Live Scapy hardware packet sniffer</li>
+                        <li>Continuous PCAP replay simulation engine</li>
+                        <li>Microsecond-scale flow feature extraction ($\mu s$)</li>
+                        <li>Real-time alert streaming & dynamic threat levels</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 2 -->
+        <div class="slide" id="slide-2">
+            <div class="v2-badge">MOTIVATION & CHALLENGES</div>
+            <h2>Problem Statement & Data Leakage Prevention</h2>
+            <p class="slide-subtitle">Addressing fundamental vulnerabilities in traditional NIDS research and production systems</p>
+            <div class="grid-2">
+                <div class="ppt-card">
+                    <h3>⚠️ NIDS Research Gotchas</h3>
+                    <ul>
+                        <li><strong>Data Leakage</strong>: Standard research papers split dataset after feature selection, leaking test distribution into training.</li>
+                        <li><strong>IP & Timestamp Bias</strong>: Models overfit on static IP addresses or timestamps instead of network behavioral metrics.</li>
+                    </ul>
+                </div>
+                <div class="ppt-card">
+                    <h3>✅ Our Solution Architecture</h3>
+                    <ul>
+                        <li><strong>Strict Split Protocol</strong>: Feature filtering restricted exclusively to training data splits.</li>
+                        <li><strong>LightGBM Selection</strong>: Leaf-wise tree growth achieving $10\times$ fewer errors than CatBoost baseline.</li>
+                        <li><strong>Real-time Flow Sweeper</strong>: Flushes 1-packet/short duration probes within 1.5s window.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 3 -->
+        <div class="slide" id="slide-3">
+            <div class="v2-badge">EVALUATION METRICS</div>
+            <h2>Full 6-Algorithm Empirical Comparison Table</h2>
+            <p class="slide-subtitle">Measured on $503,902$ test network flows from the benchmark CICIDS2017 dataset</p>
+            <table class="ppt-table">
+                <thead>
+                    <tr>
+                        <th>Algorithm</th>
+                        <th>F1-Score</th>
+                        <th>ROC-AUC</th>
+                        <th>Precision</th>
+                        <th>Recall</th>
+                        <th>FPR</th>
+                        <th>FNR</th>
+                        <th>Total Errors</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="background: rgba(56, 189, 248, 0.15);">
+                        <td><strong>🥇 LightGBM (Selected)</strong></td>
+                        <td class="highlight-text">99.74%</td>
+                        <td>99.99%</td>
+                        <td>99.65%</td>
+                        <td>99.82%</td>
+                        <td>0.07%</td>
+                        <td>0.18%</td>
+                        <td class="highlight-text">450</td>
+                    </tr>
+                    <tr>
+                        <td><strong>🥈 Hist. Gradient Boosting</strong></td>
+                        <td>99.71%</td>
+                        <td>99.99%</td>
+                        <td>99.62%</td>
+                        <td>99.81%</td>
+                        <td>0.08%</td>
+                        <td>0.19%</td>
+                        <td>489</td>
+                    </tr>
+                    <tr>
+                        <td><strong>🥉 Extra Trees</strong></td>
+                        <td>99.53%</td>
+                        <td>99.89%</td>
+                        <td>99.59%</td>
+                        <td>99.47%</td>
+                        <td>0.08%</td>
+                        <td>0.53%</td>
+                        <td>805</td>
+                    </tr>
+                    <tr>
+                        <td><strong>4️⃣ CatBoost</strong></td>
+                        <td>98.50%</td>
+                        <td>99.90%</td>
+                        <td>99.10%</td>
+                        <td>97.92%</td>
+                        <td>0.44%</td>
+                        <td>2.08%</td>
+                        <td>4,972</td>
+                    </tr>
+                    <tr>
+                        <td><strong>5️⃣ Passive Aggressive</strong></td>
+                        <td>82.05%</td>
+                        <td>86.13%</td>
+                        <td>90.93%</td>
+                        <td>74.75%</td>
+                        <td>1.52%</td>
+                        <td>25.25%</td>
+                        <td>27,846</td>
+                    </tr>
+                    <tr>
+                        <td><strong>6️⃣ MLP Neural Network</strong></td>
+                        <td>61.25%</td>
+                        <td>98.21%</td>
+                        <td>65.82%</td>
+                        <td>57.27%</td>
+                        <td>0.66%</td>
+                        <td>42.73%</td>
+                        <td>43,398</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- SLIDE 4 -->
+        <div class="slide" id="slide-4">
+            <div class="v2-badge">REAL-TIME ENGINE</div>
+            <h2>Version 2 Flow Engine Architecture</h2>
+            <p class="slide-subtitle">Asynchronous thread-safe Scapy packet parsing and dynamic model inference</p>
+            <div class="grid-2">
+                <div class="ppt-card">
+                    <h3>⚙️ Packet to Feature Pipeline</h3>
+                    <ul>
+                        <li>Parses IP/IPv6, TCP/UDP headers and timestamps.</li>
+                        <li>Reconstructs bidirectional 5-tuple network flows.</li>
+                        <li>Calculates 10 real-time features ($\mu s$ flow duration, packet means, bytes/sec).</li>
+                    </ul>
+                </div>
+                <div class="ppt-card">
+                    <h3>🔥 Live Threat Engine</h3>
+                    <ul>
+                        <li>RandomForest Classifier optimized for low-latency inference.</li>
+                        <li>Evaluates recent alert window to maintain Threat Badges (<span class="highlight-text">LOW</span>, <span style="color:#ef4444;font-weight:700">CRITICAL</span>).</li>
+                        <li>Continuous PCAP loop & safe attack simulator.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 5 -->
+        <div class="slide" id="slide-5">
+            <div class="v2-badge">WEB INTERFACE</div>
+            <h2>Unified Dark-Mode Dashboard</h2>
+            <p class="slide-subtitle">Modern glassmorphism interface built for security analysts</p>
+            <div class="grid-2">
+                <div class="ppt-card">
+                    <h3>💻 Key UI Highlights</h3>
+                    <ul>
+                        <li><strong>Live Stream Table</strong>: Auto-refreshing table updating every 1.5 seconds.</li>
+                        <li><strong>Color-Coded Badges</strong>: Green for <span style="color:#4ade80">BENIGN</span>, Red for <span style="color:#ef4444">ATTACK</span>.</li>
+                        <li><strong>1-Click Presets</strong>: `✓ Test Sample BENIGN` & `🚨 Test Sample ATTACK` buttons for V1.</li>
+                    </ul>
+                </div>
+                <div class="ppt-card">
+                    <h3>🕹️ Flexible Sniffer Controls</h3>
+                    <ul>
+                        <li>Hardware Wi-Fi & Ethernet adapter selection.</li>
+                        <li>PCAP file replay simulation for non-admin environments.</li>
+                        <li>Interactive attack simulator trigger button.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 6 -->
+        <div class="slide" id="slide-6">
+            <div class="v2-badge">SUMMARY & FUTURE WORK</div>
+            <h2>Conclusion & Future Expansion</h2>
+            <p class="slide-subtitle">Building an enterprise-ready open-source NIDS ecosystem</p>
+            <div class="grid-2">
+                <div class="ppt-card">
+                    <h3>🎯 Summary of Achievements</h3>
+                    <ul>
+                        <li>Deployed **LightGBM Production Model** achieving **99.9946% accuracy** and **99.74% F1-score** with zero data leakage.</li>
+                        <li>Built a **real-time Scapy dynamic flow tracker** capable of processing packet streams and streaming intrusion alerts every 1.5 seconds.</li>
+                        <li>Fully unified dark mode Web UI combining static tabular inspection and dynamic live monitoring.</li>
+                    </ul>
+                </div>
+                <div class="ppt-card">
+                    <h3>🚀 Future Roadmap</h3>
+                    <ul>
+                        <li><strong>eBPF Acceleration</strong>: Ultra-fast kernel packet filtering ($10\text{Gbps+}$).</li>
+                        <li><strong>Autoencoders</strong>: Unsupervised zero-day anomaly detection.</li>
+                        <li><strong>Automated Mitigation</strong>: Dynamic iptables / Windows Firewall rule creation.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- CONTROLS -->
+    <div class="ppt-controls">
+        <button class="slide-nav-btn" onclick="prevSlide()">← Previous</button>
+        
+        <div style="display:flex; align-items:center; gap:15px;">
+            <div class="progress-bar-container">
+                <div class="progress-bar-fill" id="progressFill"></div>
+            </div>
+            <span id="slideIndicator" style="font-weight:700; color:#cbd5e1; font-size:14px;">Slide 1 / 6</span>
+        </div>
+
+        <button class="slide-nav-btn" onclick="nextSlide()">Next →</button>
+    </div>
+
+    <script>
+        let currentSlide = 1;
+        const totalSlides = 6;
+
+        function showSlide(n) {
+            if (n < 1) n = 1;
+            if (n > totalSlides) n = totalSlides;
+            currentSlide = n;
+
+            document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+            document.getElementById(`slide-${currentSlide}`).classList.add('active');
+
+            document.getElementById('slideIndicator').textContent = `Slide ${currentSlide} / ${totalSlides}`;
+            document.getElementById('progressFill').style.width = `${(currentSlide / totalSlides) * 100}%`;
+        }
+
+        function nextSlide() {
+            showSlide(currentSlide + 1);
+        }
+
+        function prevSlide() {
+            showSlide(currentSlide - 1);
+        }
+
+        // Keyboard Navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+                nextSlide();
+            } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+                prevSlide();
+            }
+        });
+    </script>
+</body>
+</html>

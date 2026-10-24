@@ -1,0 +1,12 @@
+﻿python : Traceback (most recent call last):
+At line:2 char:105
++ ... ' '*.ipynb' '*.json' '*.csv'; python -c "import app.app" 2>&1 | Out-F ...
++                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "<string>", line 1, in <module>
+    import app.app
+  File "D:\Projects\NIDS-AI\app\app.py", line 11, in <module>
+    from flask import Flask, render_template, request, jsonify
+ModuleNotFoundError: No module named 'flask'

@@ -1,0 +1,43 @@
+{
+  "dataset": "data/processed/Friday-WorkingHours-Morning.pcap_ISCX.csv",
+  "model_evaluation_status": "completed",
+  "dataset_rows": 183920,
+  "train_rows": 147136,
+  "test_rows": 36784,
+  "attack_rows_total": 1953,
+  "benign_rows_total": 181967,
+  "train_attack_rows": 1575,
+  "train_attack_share": 0.010704382340147891,
+  "test_attack_rows": 378,
+  "test_attack_share": 0.010276207046541974,
+  "test_benign_rows": 36406,
+  "test_has_few_or_no_attacks": false,
+  "metrics": {
+    "0.5": {
+      "accuracy": 0.9999456285341453,
+      "precision": 0.9947368421052631,
+      "recall": 1.0,
+      "f1": 0.9973614775725593,
+      "roc_auc": 0.9999999999999999,
+      "TN": 36404,
+      "FP": 2,
+      "FN": 0,
+      "TP": 378,
+      "FPR": 5.4935999560512006e-05,
+      "FNR": 0.0
+    },
+    "0.004": {
+      "accuracy": 0.9992931709438887,
+      "precision": 0.9356435643564357,
+      "recall": 1.0,
+      "f1": 0.9667519181585678,
+      "roc_auc": 0.9999999999999999,
+      "TN": 36380,
+      "FP": 26,
+      "FN": 0,
+      "TP": 378,
+      "FPR": 0.0007141679942866561,
+      "FNR": 0.0
+    }
+  }
+}
