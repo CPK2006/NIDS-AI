@@ -1,0 +1,122 @@
+[
+    {
+        "rank": 1,
+        "feature": "Destination Port",
+        "importance": 15.925224445656571,
+        "importance_percentage": 15.925224445656571
+    },
+    {
+        "rank": 2,
+        "feature": "Init_Win_bytes_forward",
+        "importance": 8.917687837139667,
+        "importance_percentage": 8.917687837139667
+    },
+    {
+        "rank": 3,
+        "feature": "Init_Win_bytes_backward",
+        "importance": 8.186311014583776,
+        "importance_percentage": 8.186311014583776
+    },
+    {
+        "rank": 4,
+        "feature": "Bwd Packet Length Std",
+        "importance": 6.795329755412012,
+        "importance_percentage": 6.795329755412012
+    },
+    {
+        "rank": 5,
+        "feature": "Average Packet Size",
+        "importance": 5.692235010421275,
+        "importance_percentage": 5.692235010421275
+    },
+    {
+        "rank": 6,
+        "feature": "Fwd Header Length",
+        "importance": 4.878946218214782,
+        "importance_percentage": 4.878946218214782
+    },
+    {
+        "rank": 7,
+        "feature": "min_seg_size_forward",
+        "importance": 4.489319238045756,
+        "importance_percentage": 4.489319238045756
+    },
+    {
+        "rank": 8,
+        "feature": "Bwd Header Length",
+        "importance": 3.687511820563394,
+        "importance_percentage": 3.687511820563394
+    },
+    {
+        "rank": 9,
+        "feature": "PSH Flag Count",
+        "importance": 3.5226341494330935,
+        "importance_percentage": 3.522634149433093
+    },
+    {
+        "rank": 10,
+        "feature": "Flow Bytes/s",
+        "importance": 2.730745768844169,
+        "importance_percentage": 2.730745768844169
+    },
+    {
+        "rank": 11,
+        "feature": "Flow IAT Min",
+        "importance": 2.642014166083454,
+        "importance_percentage": 2.642014166083454
+    },
+    {
+        "rank": 12,
+        "feature": "Fwd IAT Min",
+        "importance": 2.567685337907199,
+        "importance_percentage": 2.567685337907199
+    },
+    {
+        "rank": 13,
+        "feature": "Flow IAT Mean",
+        "importance": 2.4375093631511553,
+        "importance_percentage": 2.4375093631511553
+    },
+    {
+        "rank": 14,
+        "feature": "Packet Length Variance",
+        "importance": 1.8010439270921321,
+        "importance_percentage": 1.801043927092132
+    },
+    {
+        "rank": 15,
+        "feature": "Packet Length Std",
+        "importance": 1.6807559182077327,
+        "importance_percentage": 1.680755918207733
+    },
+    {
+        "rank": 16,
+        "feature": "Max Packet Length",
+        "importance": 1.6165718271514369,
+        "importance_percentage": 1.6165718271514369
+    },
+    {
+        "rank": 17,
+        "feature": "Fwd Packet Length Max",
+        "importance": 1.4704743117429697,
+        "importance_percentage": 1.4704743117429697
+    },
+    {
+        "rank": 18,
+        "feature": "Total Length of Bwd Packets",
+        "importance": 1.4138245103469653,
+        "importance_percentage": 1.4138245103469653
+    },
+    {
+        "rank": 19,
+        "feature": "Fwd IAT Total",
+        "importance": 1.2471506064739102,
+        "importance_percentage": 1.2471506064739102
+    },
+    {
+        "rank": 20,
+        "feature": "Bwd Packet Length Mean",
+        "importance": 1.1037899114736542,
+        "importance_percentage": 1.1037899114736542
+    }
+]

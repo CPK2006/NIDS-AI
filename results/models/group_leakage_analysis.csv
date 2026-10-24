@@ -1,0 +1,3 @@
+name,columns,train_groups,test_groups,common_groups,test_overlap_rows,test_overlap_percentage
+2. NETWORK 5-TUPLE OVERLAP,['Destination Port'],51216,33561,30976,500965,99.4171485725399
+6. PROTOCOL + DESTINATION PORT OVERLAP,['Destination Port'],51216,33561,30976,500965,99.4171485725399

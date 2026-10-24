@@ -1,0 +1,51 @@
+{
+    "model": "Random Forest",
+    "training_samples": 2015604,
+    "testing_samples": 503902,
+    "features": 65,
+    "n_estimators": 100,
+    "training_time_seconds": 125.48721218109131,
+    "prediction_time_seconds": 1.2949519157409668,
+    "accuracy": 0.9989998055177396,
+    "precision": 0.9968416479787722,
+    "recall": 0.9972397430024549,
+    "f1_score": 0.9970406557531062,
+    "roc_auc": 0.9999506113134827,
+    "confusion_matrix": [
+        [
+            418496,
+            269
+        ],
+        [
+            235,
+            84902
+        ]
+    ],
+    "classification_report": {
+        "0": {
+            "precision": 0.9994387805058618,
+            "recall": 0.9993576349503899,
+            "f1-score": 0.9993982060809843,
+            "support": 418765.0
+        },
+        "1": {
+            "precision": 0.9968416479787722,
+            "recall": 0.9972397430024549,
+            "f1-score": 0.9970406557531062,
+            "support": 85137.0
+        },
+        "accuracy": 0.9989998055177396,
+        "macro avg": {
+            "precision": 0.998140214242317,
+            "recall": 0.9982986889764224,
+            "f1-score": 0.9982194309170452,
+            "support": 503902.0
+        },
+        "weighted avg": {
+            "precision": 0.9989999807551982,
+            "recall": 0.9989998055177396,
+            "f1-score": 0.9989998850537517,
+            "support": 503902.0
+        }
+    }
+}

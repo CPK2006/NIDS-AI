@@ -1,0 +1,29 @@
+{
+    "model": "LightGBM",
+    "accuracy": 0.9991069692122675,
+    "precision": 0.9965406850616227,
+    "recall": 0.998179404959066,
+    "f1_score": 0.9973593718825918,
+    "roc_auc": 0.9999576088376144,
+    "training_time": 11.733011722564697,
+    "prediction_time": 0.6344308853149414,
+    "confusion_matrix": [
+        [
+            418470,
+            295
+        ],
+        [
+            155,
+            84982
+        ]
+    ],
+    "true_negatives": 418470,
+    "false_positives": 295,
+    "false_negatives": 155,
+    "true_positives": 84982,
+    "total_errors": 450,
+    "n_estimators": 100,
+    "learning_rate": 0.1,
+    "num_leaves": 31,
+    "max_depth": -1
+}

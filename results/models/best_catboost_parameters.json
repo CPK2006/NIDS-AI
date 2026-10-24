@@ -1,0 +1,12 @@
+{
+    "model": "CatBoost_3",
+    "iterations": 500,
+    "depth": 10,
+    "learning_rate": 0.05,
+    "tree_count": 376,
+    "validation_accuracy": 0.9990846420801694,
+    "validation_precision": 0.9961329446747426,
+    "validation_recall": 0.9984583761562179,
+    "validation_f1_score": 0.9972943048416545,
+    "validation_roc_auc": 0.9999749541792394
+}

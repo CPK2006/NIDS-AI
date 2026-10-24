@@ -1,0 +1,14 @@
+,Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv,Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv,Friday-WorkingHours-Morning.pcap_ISCX.csv,Monday-WorkingHours.pcap_ISCX.csv,Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX.csv,Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX.csv,Tuesday-WorkingHours.pcap_ISCX.csv,Wednesday-workingHours.pcap_ISCX.csv,Total
+Init_Win_bytes_backward,85737.0,73109.0,111958.0,273733.0,130397.0,96787.0,237169.0,255979.0,1264869.0
+Init_Win_bytes_forward,31128.0,58555.0,92167.0,210666.0,98629.0,79136.0,190373.0,190854.0,951508.0
+Flow IAT Min,108.0,175.0,225.0,512.0,353.0,263.0,504.0,748.0,2888.0
+Flow IAT Mean,2.0,35.0,9.0,15.0,4.0,11.0,16.0,21.0,113.0
+Flow Duration,2.0,35.0,9.0,15.0,4.0,11.0,16.0,21.0,113.0
+Flow IAT Max,2.0,35.0,9.0,15.0,4.0,11.0,16.0,21.0,113.0
+Flow Packets/s,2.0,35.0,9.0,15.0,4.0,11.0,16.0,21.0,113.0
+Flow Bytes/s,2.0,35.0,8.0,9.0,4.0,10.0,0.0,16.0,84.0
+Fwd Header Length.1,0.0,0.0,0.0,23.0,0.0,0.0,11.0,1.0,35.0
+min_seg_size_forward,0.0,0.0,0.0,23.0,0.0,0.0,11.0,1.0,35.0
+Fwd Header Length,0.0,0.0,0.0,23.0,0.0,0.0,11.0,1.0,35.0
+Bwd Header Length,0.0,0.0,0.0,17.0,0.0,0.0,5.0,0.0,22.0
+Fwd IAT Min,6.0,0.0,0.0,0.0,0.0,0.0,0.0,11.0,17.0

@@ -1,0 +1,19 @@
+Feature,Unique_Values
+Fwd PSH Flags,2
+Bwd PSH Flags,1
+Fwd URG Flags,2
+Bwd URG Flags,1
+FIN Flag Count,2
+SYN Flag Count,2
+RST Flag Count,2
+PSH Flag Count,2
+ACK Flag Count,2
+URG Flag Count,2
+CWE Flag Count,2
+ECE Flag Count,2
+Fwd Avg Bytes/Bulk,1
+Fwd Avg Packets/Bulk,1
+Fwd Avg Bulk Rate,1
+Bwd Avg Bytes/Bulk,1
+Bwd Avg Packets/Bulk,1
+Bwd Avg Bulk Rate,1

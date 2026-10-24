@@ -1,0 +1,95 @@
+{
+    "experiment": "Sequential Top-20 Train Validation Test",
+    "dataset": "data/sample/cicids2017_binary_deduplicated.csv",
+    "feature_count": 20,
+    "features": [
+        "Destination Port",
+        "Bwd Packet Length Std",
+        "Init_Win_bytes_forward",
+        "Init_Win_bytes_backward",
+        "Fwd Header Length",
+        "Average Packet Size",
+        "min_seg_size_forward",
+        "Flow IAT Mean",
+        "Bwd Header Length",
+        "PSH Flag Count",
+        "Flow IAT Min",
+        "Fwd Packet Length Max",
+        "Fwd IAT Min",
+        "Total Length of Bwd Packets",
+        "Max Packet Length",
+        "Fwd IAT Total",
+        "Packet Length Std",
+        "Flow Bytes/s",
+        "Bwd Packet Length Mean",
+        "Packet Length Variance"
+    ],
+    "split": {
+        "train": "first 70%",
+        "validation": "next 10%",
+        "test": "final 20%"
+    },
+    "shapes": {
+        "train": [
+            1763654,
+            20
+        ],
+        "validation": [
+            251950,
+            20
+        ],
+        "test": [
+            503902,
+            20
+        ]
+    },
+    "catboost_parameters": {
+        "iterations": 500,
+        "depth": 10,
+        "learning_rate": 0.05,
+        "random_seed": 42
+    },
+    "training_time_seconds": 79.95509195327759,
+    "prediction_time_seconds": 0.29653406143188477,
+    "validation_threshold": 0.003,
+    "validation_metrics": {
+        "accuracy": 0.9675649930541774,
+        "precision": 0.9546890017849787,
+        "recall": 0.7438750401198245,
+        "f1": 0.8361996392062537,
+        "fpr": 0.00442143906676373,
+        "fnr": 0.2561249598801755,
+        "tn": 222919,
+        "fp": 990,
+        "fn": 7182,
+        "tp": 20859
+    },
+    "test_threshold_0_50": {
+        "accuracy": 0.727768494667614,
+        "precision": 0.9996992481203008,
+        "recall": 0.17904659305144088,
+        "f1": 0.3037003197807218,
+        "roc_auc": 0.9990937513465215,
+        "fpr": 2.6720741530267177e-05,
+        "fnr": 0.8209534069485591,
+        "tn": 336808,
+        "fp": 9,
+        "fn": 137169,
+        "tp": 29916,
+        "total_errors": 137178
+    },
+    "test_selected_threshold": {
+        "accuracy": 0.990011946767427,
+        "precision": 0.9900153609831029,
+        "recall": 0.9797588053984498,
+        "f1": 0.9848603804006149,
+        "roc_auc": 0.9990937513465215,
+        "fpr": 0.004901771585163457,
+        "fnr": 0.02024119460155011,
+        "tn": 335166,
+        "fp": 1651,
+        "fn": 3382,
+        "tp": 163703,
+        "total_errors": 5033
+    }
+}

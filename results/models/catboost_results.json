@@ -1,0 +1,24 @@
+{
+    "model": "CatBoost",
+    "accuracy": 0.9991526130080849,
+    "precision": 0.9967396148523444,
+    "recall": 0.9982498796058118,
+    "f1_score": 0.9974941755720264,
+    "roc_auc": 0.9999660523655516,
+    "training_time": 34.90325450897217,
+    "prediction_time": 0.2188701629638672,
+    "confusion_matrix": [
+        [
+            418487,
+            278
+        ],
+        [
+            149,
+            84988
+        ]
+    ],
+    "tree_count": 179,
+    "depth": 8,
+    "iterations": 300,
+    "learning_rate": 0.1
+}
