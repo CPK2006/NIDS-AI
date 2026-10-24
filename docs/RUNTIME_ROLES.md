@@ -46,9 +46,11 @@ Install the pinned local stack and Scapy from a clean Windows checkout with:
 .\.venv\Scripts\python.exe -m pip install -r requirements-sensor.txt
 ```
 
-Model files are deliberately ignored by Git (`*.pkl`, `*.joblib`, and
-`results/*`). The hosted V1 deployment is configured to retrieve the LightGBM
-artifact from the private Hugging Face repository
+Datasets and generated working files are ignored by Git. Evaluation artifacts
+are explicitly tracked under `results/models/`, including
+the V1 LightGBM model and CatBoost fallback. These evaluation artifacts do not
+include the separate V2 live-sensor model. The hosted V1 deployment is
+configured to retrieve the LightGBM artifact from the private Hugging Face repository
 `CPK2006/nids-ai-model-artifacts` by default. `HF_TOKEN` must be configured in
 the deployment environment with read access to that repository; `HF_MODEL_REPO`
 can override the repository ID. The hosted loader verifies the V1 file against
@@ -58,17 +60,12 @@ identity, or release approval. The repository and deployment configuration
 alone do not establish that a model owner has approved these binaries for
 release.
 
-The current local `model_artifacts.sha256` lists only the three runtime files:
-the V2 Random Forest, V1 LightGBM primary, and V1 CatBoost fallback. The
-verifier currently succeeds for those local files. This confirms only that the
-file bytes match the listed SHA-256 values; it does not establish provenance,
-release approval, training-run identity, or source authenticity, and it does
-not distribute or authenticate the artifacts.
-
-A clean checkout needs the reviewed manifest and verifier in source control,
-the exact binary files obtained from the owner-approved trusted source at the
-manifest paths, and a successful verification before local detection starts.
-Preserve the paths in `model_artifacts.sha256`, then verify with:
+The checked-in `model_artifacts.sha256` lists three runtime files: the V2
+Random Forest, V1 LightGBM primary, and V1 CatBoost fallback. The V1 files are
+tracked under `results/models/`. The V2 model
+(`v2/model/nids_v2_model.pkl`) is not distributed in a clean checkout and must
+be obtained from the owner-approved trusted source. After placing it at the
+manifest path, verify all three files with:
 
 ```powershell
 .\.venv\Scripts\python.exe scripts\verify_model_artifacts.py
@@ -76,10 +73,10 @@ Preserve the paths in `model_artifacts.sha256`, then verify with:
 
 The verifier checks the V2 model, V1 primary model, and V1 fallback model by
 SHA-256 without deserializing them. A missing or modified file fails the check.
-Update hashes only alongside a separately reviewed model release. Do not
-commit model weights to obtain a green check. The approved six-algorithm
-evaluation ranking does not authorize replacing V2's Random Forest; V1 remains
-LightGBM-primary with CatBoost fallback.
+Update hashes only alongside a separately reviewed model release. The
+six-algorithm evaluation results are research comparisons; they do not by
+themselves authorize replacing V2's Random Forest. V1 remains LightGBM-primary
+with CatBoost fallback.
 
 ## Hosted Linux web process
 
@@ -189,6 +186,6 @@ The hosted request limiter is process-local; put a shared ingress/rate limit in
 front of multiple Gunicorn workers or instances. Event history uses the
 configured PostgreSQL repository, and hosted delivery uses shared PostgreSQL
 tables. Local sensor outboxes remain SQLite unless the sensor explicitly opts
-into PostgreSQL; they are not forwarded or migrated automatically. Local
-sensor model artifacts are also not present in a clean source checkout until
-obtained from the approved artifact transfer process.
+into PostgreSQL; they are not forwarded or migrated automatically. The local
+V2 sensor model is not present in a clean source checkout until obtained from
+the approved artifact transfer process.

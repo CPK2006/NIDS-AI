@@ -1,117 +1,106 @@
-# CICIDS2017 Network Intrusion Detection System
+# NIDS-AI
 
-A machine-learning-based Network Intrusion Detection System (NIDS) built on the **CICIDS2017 dataset**. The project classifies network flows as **BENIGN** or **ATTACK**, with a focus on rigorous evaluation — avoiding data leakage, duplicate flows, and naive train/test splitting — rather than just chasing accuracy.
+NIDS-AI is a network intrusion detection project built around the CICIDS2017 flow dataset. It includes an ML evaluation pipeline, a Flask dashboard, and a Windows sensor runtime for flow capture, classification, event history, and optional forwarding to a hosted dashboard.
 
----
+## What is included
 
-## Overview
+- CICIDS2017 data preparation, cleaning, feature selection, training, and evaluation scripts.
+- A six-algorithm comparison covering LightGBM, CatBoost, Extra Trees, Histogram Gradient Boosting, Passive Aggressive, and Isolation Forest.
+- Leakage-aware sequential evaluation of a 20-feature CatBoost model.
+- A Flask web app with local sensor and hosted web runtime roles.
+- Saved evaluation models, metrics, and figures under [`results/`](results/).
 
-- **Dataset:** CICIDS2017, prepared/deduplicated to 2,519,506 rows × 79 columns (78 features + 1 binary target). Excluded from Git due to size.
-- **Evaluation strategy:** Sequential (time-ordered) train/validation/test split instead of random splitting, after finding significant train/test overlap via group-leakage analysis. Test set is never touched during model or threshold selection.
-- **Feature reduction:** 78 → 20 features (see below), keeping performance while cutting model complexity.
-- **Model:** CatBoost Classifier, threshold tuned on the validation set only.
+The raw and prepared CICIDS2017 data files are not included because of their size. The six-model evaluation artifacts and the leakage-free Top-20 evaluation model are included in this branch. The separate V2 live-sensor model is not included in a clean checkout; see [Runtime and deployment roles](docs/RUNTIME_ROLES.md).
 
----
+## Model results
 
-## Final Model: Leakage-Free Top-20 CatBoost
+### Six-algorithm comparison
 
-| | |
-|---|---|
-| Features | 20 |
-| Threshold | 0.004 |
+These metrics come from the saved six-model comparison. The complete comparison, including precision, recall, ROC-AUC, and timing, is in [`all_six_model_comparison.csv`](results/models/all_six_model_comparison.csv); the ranked results are in [`all_six_model_ranking.csv`](results/models/all_six_model_ranking.csv).
+
+| Model | Accuracy | F1 |
+|---|---:|---:|
+| CatBoost | 99.9153% | 99.7494% |
+| LightGBM | 99.9107% | 99.7359% |
+| Histogram Gradient Boosting | 99.9030% | 99.7131% |
+| Extra Trees | 99.8402% | 99.5269% |
+| Passive Aggressive | 94.4739% | 82.0499% |
+| Isolation Forest | 86.3398% | 58.8928% |
+
+### Leakage-free sequential Top-20 CatBoost
+
+This is a separate, time-ordered evaluation: about 70% training, 10% validation, and 20% test, with no shuffling. The 0.004 decision threshold was selected on validation data and then evaluated on the untouched test set.
+
+| Metric | Test result |
+|---|---:|
 | Accuracy | 99.0133% |
 | Precision | 99.0981% |
 | Recall | 97.9154% |
-| F1-score | 98.5032% |
+| F1 | 98.5032% |
 | ROC-AUC | 99.8995% |
 
-**Confusion matrix (test set):**
+It uses 20 selected features. The model output and full metrics are in [`leakage_free_top20_model.cbm`](results/models/leakage_free_top20_model.cbm) and [`leakage_free_top20_results.json`](results/models/leakage_free_top20_results.json). The six-model comparison and the sequential evaluation use different evaluation runs, so their scores should not be compared as if they came from the same split and protocol.
 
-```text
-                 Predicted
-              BENIGN   ATTACK
-Actual BENIGN 335328    1489
-Actual ATTACK   3483  163602
+## Run locally on Windows
+
+Use Python 3.11.9, matching [`.python-version`](.python-version). From the project root, create an environment and install the local sensor dependencies:
+
+```powershell
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements-sensor.txt
+Copy-Item .env.example .env
+python app\app.py
 ```
 
-**Model comparison:**
+Open [http://127.0.0.1:5000](http://127.0.0.1:5000). The app loads `.env` when `python-dotenv` is installed. The example file contains placeholders; keep real credentials and keys in your private `.env` or environment variables, never in Git. Loopback-only local use does not require dashboard credentials by default. Configure authentication before exposing the service to another machine.
 
-| Model | Features | Threshold | Accuracy | F1 | ROC-AUC |
-|---|---|---|---|---|---|
-| Sequential CatBoost | 65 | 0.500 | 98.96% | 98.41% | 99.9959% |
-| Sequential Train/Val/Test | 78 | 0.010 | 91.89% | 86.12% | 99.8604% |
-| Sequential Top-20 | 20 | 0.003 | 99.00% | 98.49% | 99.9094% |
-| **Leakage-Free Top-20 (final)** | **20** | **0.004** | **99.01%** | **98.50%** | **99.8995%** |
+The local sensor role is the default. Packet capture requires a compatible Windows environment, Scapy, and appropriate capture permissions. A clean checkout does not include the V2 model file, so V2 live inference remains unavailable until the approved artifact is installed and verified as described in the runtime guide. The tracked LightGBM and CatBoost evaluation artifacts are under `results/models/`.
 
-The leakage-free Top-20 model was selected as the final model because it achieved the highest F1-score among the evaluated models while using only 20 features, reducing the feature set from 78 to 20.
+## Run the hosted web process
 
----
+For Render or another Linux host, use the hosted dependency file and start script:
 
-## Top-20 Features
-
-Destination Port, Bwd Packet Length Std, Init_Win_bytes_forward, Init_Win_bytes_backward, Fwd Header Length, Average Packet Size, min_seg_size_forward, Flow IAT Mean, Bwd Header Length, PSH Flag Count, Flow IAT Min, Fwd Packet Length Max, Fwd IAT Min, Total Length of Bwd Packets, Max Packet Length, Fwd IAT Total, Packet Length Std, Flow Bytes/s, Bwd Packet Length Mean, Packet Length Variance
-
-Top 5 by importance: Destination Port, Init_Win_bytes_backward, Fwd Packet Length Max, PSH Flag Count, Init_Win_bytes_forward. Full plot: `results/plots/top20_feature_importance.png`
-
----
-
-## Methodology Notes
-
-- **Leakage investigation:** Checked for flow/group/source-destination overlap between train and test. The available features lack Flow ID, IP, and protocol columns, but overlap was still detectable via network grouping — hence the switch to sequential (non-random) splitting.
-- **Duplicate removal:** Duplicate flows were removed before the final split to stop near-identical samples leaking across train/test.
-- **Sequential split:** ~70% train / 10% validation / 20% test, preserving original time order. Class balance shifts across splits (13% attack in training vs 33% in test), which better reflects a real deployment scenario than random splitting would.
-- **Threshold selection:** The default 0.50 threshold performed poorly on the shifted test distribution. The threshold (0.004) was selected using validation data only, before the test set was evaluated.
-
----
-
-## Project Structure
-
-```text
-NIDS-AI/
-├── data/            # datasets and generated features/splits (gitignored)
-├── results/
-│   ├── models/      # trained CatBoost models (.cbm)
-│   └── plots/       # feature importance, threshold analysis, model comparison
-├── scripts/
-│   ├── prepare_dataset.py, remove_duplicates.py, clean_features.py
-│   ├── verify_dataset_integrity.py, verify_targets.py
-│   ├── analyze_group_leakage.py, analyze_overlap.py
-│   ├── analyze_feature_importance.py, analyze_sequential_thresholds.py, analyze_threshold_stability.py
-│   ├── select_top_features.py
-│   ├── train_catboost.py, train_sequential_catboost.py
-│   ├── train_sequential_train_val_test.py, train_sequential_top20_train_val_test.py
-│   ├── train_leakage_free_top20.py
-│   └── final_model_comparison.py, generate_final_plots.py, safe_workflow.py
-├── .gitignore
-└── README.md
+```sh
+python -m pip install -r requirements-hosted.txt
+sh scripts/start_hosted.sh
 ```
 
----
+Configure the platform's environment with the required role, PostgreSQL connection, dashboard authentication, and sensor API key. See [Runtime and deployment roles](docs/RUNTIME_ROLES.md) for the separate `hosted_web`, `hosted_worker`, and `report_job` requirements, health endpoints, and deployment checks. Do not copy a credential-filled local `.env` to teammates or commit it.
 
-## Running the Project
+## Data and evaluation workflow
 
-The full workflow — checking required files, loading the deduplicated dataset and Top-20 features, sequential splitting, training, threshold selection, and evaluation on the untouched test set — is wrapped in one script:
+The data files are intentionally excluded from Git. Put the extracted CICIDS2017 flow CSV files in `data/processed/`, then run the preparation and deduplication steps from the repository root:
 
-```bash
-python scripts/safe_workflow.py
+```powershell
+python scripts\prepare_dataset.py
+python scripts\remove_duplicates.py
 ```
 
-To regenerate the result plots:
+These create `data/sample/cicids2017_binary.csv` and `data/sample/cicids2017_binary_deduplicated.csv`. Continue with the scripts in `scripts/` for feature cleaning, splitting, selection, training, and evaluation. The safe workflow expects prepared data and intermediate feature files to exist; it exits with a list of missing inputs otherwise. To regenerate the final evaluation plots from the saved result files, run:
 
-```bash
-python scripts/generate_final_plots.py
+```powershell
+python scripts\generate_final_plots.py
 ```
 
-For a step-by-step run instead of the wrapped workflow, the scripts under `scripts/` can be run individually in the order they're grouped above (prepare → dedupe → leakage analysis → feature selection → train → compare → plot).
+The stored results are already available under `results/models/` and `results/plots/`; rerunning training requires the dataset and generated intermediate files.
 
----
+## Repository layout
+
+| Path | Purpose |
+|---|---|
+| `app/` | Flask application, templates, and static assets |
+| `v2/` | Local detector, feature extraction, event storage, forwarding, and reporting |
+| `scripts/` | Dataset, training, comparison, plotting, and verification workflows |
+| `data/` | Local datasets, splits, feature files, and SQLite event history; ignored by Git |
+| `results/models/` | Trained evaluation models, scores, and comparison tables |
+| `results/plots/` | Evaluation plots and report figures |
+| `docs/RUNTIME_ROLES.md` | Local and hosted runtime/deployment guide |
 
 ## Limitations
 
-CICIDS2017 is a benchmark dataset and doesn't fully represent real-world network traffic. Despite the leakage-aware, sequential evaluation used here, these results shouldn't be assumed to transfer directly to production networks — validation on independently collected traffic would be needed for that.
-
----
+CICIDS2017 is a benchmark dataset, and its traffic may not represent a deployment network. Test scores do not guarantee performance on new traffic. Validate on independently collected, representative data before relying on the detector operationally.
 
 ## License
 
-This project is intended for academic and research purposes.
+See [LICENSE](LICENSE). This project is intended for academic and research purposes.
